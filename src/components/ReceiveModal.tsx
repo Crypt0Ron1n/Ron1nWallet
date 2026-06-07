@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Share,
-  Alert
+  Alert,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import * as Clipboard from 'expo-clipboard';
@@ -28,13 +28,13 @@ export default function ReceiveModal({ visible, onClose, asset }: ReceiveModalPr
 
   const handleCopyAddress = async () => {
     await Clipboard.setStringAsync(asset.address);
-    Alert.alert('Copied', `${asset.symbol} address copied to clipboard.`);
+    Alert.alert('Copied', `${asset.symbol} copied to clipboard.`);
   };
 
   const handleShareAddress = async () => {
     try {
       await Share.share({
-        message: `Here is my Ron1n ${asset.symbol} address:\n\n${asset.address}`,
+        message: `Here is my Ron1n ${asset.symbol}:\n\n${asset.address}`,
       });
     } catch (error) {
       console.error('Error sharing address:', error);
@@ -42,15 +42,9 @@ export default function ReceiveModal({ visible, onClose, asset }: ReceiveModalPr
   };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          
           <View style={styles.header}>
             <Text style={styles.headerText}>RECEIVE {asset.symbol}</Text>
           </View>
@@ -68,14 +62,15 @@ export default function ReceiveModal({ visible, onClose, asset }: ReceiveModalPr
             <Text style={styles.networkWarning}>
               Send only {asset.name} ({asset.symbol}) to this address.
             </Text>
-            <Text style={styles.addressText} selectable={true}>
+
+            <Text style={styles.addressText} selectable>
               {asset.address}
             </Text>
           </View>
 
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.actionButton} onPress={handleCopyAddress}>
-              <Text style={styles.actionButtonText}>COPY ADDRESS</Text>
+              <Text style={styles.actionButtonText}>COPY</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButtonSecondary} onPress={handleShareAddress}>
@@ -86,7 +81,6 @@ export default function ReceiveModal({ visible, onClose, asset }: ReceiveModalPr
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>CLOSE</Text>
           </TouchableOpacity>
-
         </View>
       </View>
     </Modal>
@@ -105,7 +99,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#B026FF', 
+    borderColor: '#B026FF',
     alignItems: 'center',
     shadowColor: '#B026FF',
     shadowOffset: { width: 0, height: -4 },
@@ -113,9 +107,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 10,
   },
-  header: {
-    marginBottom: 24,
-  },
+  header: { marginBottom: 24 },
   headerText: {
     color: '#FFFFFF',
     fontSize: 20,
@@ -128,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#00FF41', 
+    borderColor: '#00FF41',
     marginBottom: 24,
   },
   addressContainer: {
