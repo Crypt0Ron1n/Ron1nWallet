@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# SSH keys
+Crypt0Ron1n
+Crypt0Ron1n.pub
+*.pem
+*.key

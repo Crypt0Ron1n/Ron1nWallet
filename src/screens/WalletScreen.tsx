@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { VaultService } from '../services/VaultService';
 import { WalletService } from '../services/WalletService';
+import { ActivityService } from '../services/ActivityService';
 import ReceiveModal, { type AssetInfo } from '../components/ReceiveModal';
 
 export default function WalletScreen() {
@@ -59,6 +60,12 @@ export default function WalletScreen() {
           setBtcAddress(btc.address);
           setLtcAddress(ltc.address);
           setSolAddress(sol.address);
+
+          await ActivityService.addActivity(
+            'RESTORE',
+            'Wallet Restored',
+            'Vault loaded from SecureStore'
+          );
 
           if (__DEV__) {
             console.log('Wallet restored from secure storage');
@@ -104,6 +111,12 @@ export default function WalletScreen() {
   const copySynID = async () => {
     if (!synID) return;
 
+    await ActivityService.addActivity(
+      'COPY',
+      'Copied Syn-ID',
+      'Syndicate ID copied to clipboard'
+    );
+
     await Clipboard.setStringAsync(synID);
 
     if (__DEV__) {
@@ -148,6 +161,12 @@ export default function WalletScreen() {
       const newID = `syn-${hash.substring(0, 8).toUpperCase()}`;
 
       await VaultService.saveIdentity(newID);
+
+      await ActivityService.addActivity(
+        'FORGE',
+        'Wallet Forged',
+        'New Syn-ID and wallet vault created'
+      );
 
       if (__DEV__) {
         console.log('Vault Save Successful:', newID);
@@ -213,7 +232,13 @@ export default function WalletScreen() {
 
             <TouchableOpacity
               style={styles.smallButton}
-              onPress={() => {
+              onPress={async () => {
+                await ActivityService.addActivity(
+                  'RECEIVE_VIEW',
+                  'Viewed Syn-ID Receive',
+                  'Syndicate ID receive QR opened'
+                );
+
                 setSelectedAsset({
                   symbol: 'SYN-ID',
                   name: 'Syndicate Identity',
@@ -236,7 +261,13 @@ export default function WalletScreen() {
             <TouchableOpacity
               key={asset.symbol}
               style={styles.assetRow}
-              onPress={() => {
+              onPress={async () => {
+                await ActivityService.addActivity(
+                  'RECEIVE_VIEW',
+                  `Viewed ${asset.symbol} Receive`,
+                  'Receive QR opened'
+                );
+
                 setSelectedAsset(asset);
                 setReceiveModalVisible(true);
               }}
@@ -276,7 +307,17 @@ export default function WalletScreen() {
 
           <TouchableOpacity
             style={styles.smallButton}
-            onPress={() => setPhraseVisible(!phraseVisible)}
+            onPress={async () => {
+              if (!phraseVisible) {
+                await ActivityService.addActivity(
+                  'RECOVERY_VIEW',
+                  'Recovery Phrase Viewed',
+                  'Recovery phrase visibility was enabled'
+                );
+              }
+
+              setPhraseVisible(!phraseVisible);
+            }}
           >
             <Text style={styles.smallButtonText}>
               {phraseVisible ? 'HIDE PHRASE' : 'SHOW PHRASE'}
