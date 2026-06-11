@@ -1,10 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
+
+import Ron1nScreen from '../components/Ron1nScreen';
+import Ron1nCard from '../components/Ron1nCard';
 import { ActivityService, Ron1nActivity } from '../services/ActivityService';
+import { Ron1nColors } from '../theme/ron1nTheme';
 
 export default function SecurityScreen() {
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
@@ -34,157 +37,228 @@ export default function SecurityScreen() {
   };
 
   return (
-    <LinearGradient colors={['#050505', '#0A0014', '#050505']} style={styles.container}>
-      <SafeAreaView style={styles.safe}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+    <Ron1nScreen>
+      <SafeAreaView>
+        <View style={styles.hero}>
+          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
           <Text style={styles.title}>SECURITY CENTER</Text>
           <Text style={styles.subtitle}>Private by default. Quantum ready.</Text>
+        </View>
 
-          <View style={styles.scoreCard}>
-            <Text style={styles.scoreLabel}>RON1N SECURITY SCORE</Text>
+        <Ron1nCard>
+          <Text style={styles.scoreLabel}>RON1N SECURITY SCORE</Text>
+          <View style={styles.scoreRow}>
             <Text style={styles.score}>92</Text>
-            <Text style={styles.scoreOutOf}>/ 100</Text>
+            <Text style={styles.scoreOutOf}>/100</Text>
           </View>
+          <Text style={styles.scoreStatus}>VAULT STATUS: LOW THREAT</Text>
+        </Ron1nCard>
 
-          <View style={styles.grid}>
-            <StatusTile title="BIOMETRIC VAULT" status="ACTIVE" />
-            <StatusTile title="SECURESTORE" status="PROTECTED" />
-            <StatusTile title="SCREEN CAPTURE" status="BLOCKED" />
-            <StatusTile title="SYN-ID" status="ACTIVE" />
-          </View>
+        <View style={styles.grid}>
+          <StatusTile title="BIOMETRIC VAULT" status="ACTIVE" color={Ron1nColors.green} />
+          <StatusTile title="SECURESTORE" status="PROTECTED" color={Ron1nColors.green} />
+          <StatusTile title="SCREEN CAPTURE" status="BLOCKED" color={Ron1nColors.blue} />
+          <StatusTile title="SYN-ID" status="ACTIVE" color={Ron1nColors.purple} />
+        </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>POST-QUANTUM ROADMAP</Text>
-            <Text style={styles.cardText}>ML-DSA signatures</Text>
-            <Text style={styles.cardText}>ML-KEM secure exchange</Text>
-            <Text style={styles.cardText}>liboqs native bridge</Text>
-            <Text style={styles.pending}>STATUS: DEVELOPMENT</Text>
-          </View>
+        <Ron1nCard>
+          <Text style={styles.cardTitle}>POST-QUANTUM ROADMAP</Text>
+          <Text style={styles.cardText}>ML-DSA ownership signatures</Text>
+          <Text style={styles.cardText}>ML-KEM secure key exchange</Text>
+          <Text style={styles.cardText}>liboqs native bridge</Text>
+          <Text style={styles.pending}>STATUS: DEVELOPMENT</Text>
+        </Ron1nCard>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>ASSET SECURITY STATES</Text>
-            <Text style={styles.green}>● PQ PROTECTED — inside Ron1n</Text>
-            <Text style={styles.yellow}>● PQ VERIFIED — proof exists externally</Text>
-            <Text style={styles.red}>● STANDARD EXTERNAL — public chain rules apply</Text>
-          </View>
+        <Ron1nCard>
+          <Text style={styles.cardTitle}>ASSET SECURITY STATES</Text>
+          <Text style={styles.green}>● PQ PROTECTED — inside Ron1n</Text>
+          <Text style={styles.yellow}>● PQ VERIFIED — proof exists externally</Text>
+          <Text style={styles.red}>● STANDARD EXTERNAL — public chain rules apply</Text>
+        </Ron1nCard>
 
-          <View style={styles.historyHeader}>
-            <Text style={styles.cardTitle}>PRIVATE ACTIVITY</Text>
-            <TouchableOpacity onPress={clearHistory}>
-              <Text style={styles.clearText}>CLEAR</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.historyHeader}>
+          <Text style={styles.sectionTitle}>PRIVATE ACTIVITY</Text>
+          <TouchableOpacity onPress={clearHistory}>
+            <Text style={styles.clearText}>CLEAR</Text>
+          </TouchableOpacity>
+        </View>
 
-          {activities.length === 0 ? (
-            <Text style={styles.empty}>No private activity yet.</Text>
-          ) : (
-            activities.map((item) => (
-              <View key={item.id} style={styles.activityRow}>
-                <Text style={styles.activityTitle}>{item.title}</Text>
-                <Text style={styles.activityDetail}>{item.detail}</Text>
-                <Text style={styles.activityTime}>
-                  {new Date(item.createdAt).toLocaleString()}
-                </Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
+        {activities.length === 0 ? (
+          <Text style={styles.empty}>No private activity yet.</Text>
+        ) : (
+          activities.map((item) => (
+            <View key={item.id} style={styles.activityRow}>
+              <Text style={styles.activityTitle}>{item.title}</Text>
+              <Text style={styles.activityDetail}>{item.detail}</Text>
+              <Text style={styles.activityTime}>
+                {new Date(item.createdAt).toLocaleString()}
+              </Text>
+            </View>
+          ))
+        )}
       </SafeAreaView>
-    </LinearGradient>
+    </Ron1nScreen>
   );
 }
 
-function StatusTile({ title, status }: { title: string; status: string }) {
+function StatusTile({
+  title,
+  status,
+  color,
+}: {
+  title: string;
+  status: string;
+  color: string;
+}) {
   return (
     <View style={styles.tile}>
       <Text style={styles.tileTitle}>{title}</Text>
-      <Text style={styles.tileStatus}>{status}</Text>
+      <Text style={[styles.tileStatus, { color }]}>{status}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safe: { flex: 1, padding: 20 },
+  hero: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 118,
+    height: 118,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
   title: {
-    color: '#B026FF',
-    fontSize: 25,
+    color: Ron1nColors.gold,
+    fontSize: 23,
     fontWeight: '900',
     letterSpacing: 3,
     fontFamily: 'KatakanaStyle',
-    marginTop: 20,
   },
   subtitle: {
-    color: '#777',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 6,
-    marginBottom: 22,
     fontFamily: 'KatakanaStyle',
   },
-  scoreCard: {
-    alignItems: 'center',
-    padding: 24,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: '#222',
+  scoreLabel: {
+    color: Ron1nColors.gray,
+    fontSize: 10,
+    fontFamily: 'KatakanaStyle',
+    textAlign: 'center',
   },
-  scoreLabel: { color: '#777', fontSize: 10, fontFamily: 'KatakanaStyle' },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
   score: {
-    color: '#00FF41',
-    fontSize: 64,
+    color: Ron1nColors.green,
+    fontSize: 68,
     fontWeight: '900',
-    textShadowColor: '#00FF41',
-    textShadowRadius: 14,
+    textShadowColor: Ron1nColors.green,
+    textShadowRadius: 16,
   },
-  scoreOutOf: { color: '#777', marginTop: -8 },
+  scoreOutOf: {
+    color: Ron1nColors.gray,
+    fontSize: 20,
+    marginBottom: 14,
+  },
+  scoreStatus: {
+    color: Ron1nColors.gold,
+    textAlign: 'center',
+    fontSize: 11,
+    fontFamily: 'KatakanaStyle',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginTop: 18,
+    marginBottom: 16,
   },
   tile: {
     width: '48%',
-    backgroundColor: '#0A0A0A',
+    backgroundColor: 'rgba(255,255,255,0.045)',
     borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 16,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 18,
     padding: 14,
   },
-  tileTitle: { color: '#777', fontSize: 9, fontFamily: 'KatakanaStyle' },
-  tileStatus: { color: '#00FF41', fontSize: 11, marginTop: 8, fontFamily: 'KatakanaStyle' },
-  card: {
-    marginTop: 18,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 18,
-    padding: 16,
+  tileTitle: {
+    color: Ron1nColors.gray,
+    fontSize: 9,
+    fontFamily: 'KatakanaStyle',
   },
-  cardTitle: { color: '#fff', fontSize: 13, fontWeight: '900', fontFamily: 'KatakanaStyle' },
-  cardText: { color: '#aaa', fontSize: 12, marginTop: 10, fontFamily: 'KatakanaStyle' },
-  pending: { color: '#B026FF', fontSize: 11, marginTop: 14, fontFamily: 'KatakanaStyle' },
-  green: { color: '#00FF41', marginTop: 12, fontSize: 11 },
-  yellow: { color: '#ffcc00', marginTop: 8, fontSize: 11 },
-  red: { color: '#FF3366', marginTop: 8, fontSize: 11 },
+  tileStatus: {
+    fontSize: 11,
+    marginTop: 8,
+    fontFamily: 'KatakanaStyle',
+  },
+  cardTitle: {
+    color: Ron1nColors.white,
+    fontSize: 13,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  cardText: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    marginTop: 10,
+    fontFamily: 'KatakanaStyle',
+  },
+  pending: {
+    color: Ron1nColors.purple,
+    fontSize: 11,
+    marginTop: 14,
+    fontFamily: 'KatakanaStyle',
+  },
+  green: { color: Ron1nColors.green, marginTop: 12, fontSize: 11 },
+  yellow: { color: Ron1nColors.gold, marginTop: 8, fontSize: 11 },
+  red: { color: Ron1nColors.red, marginTop: 8, fontSize: 11 },
   historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
+    marginTop: 10,
     alignItems: 'center',
   },
-  clearText: { color: '#FF3366', fontSize: 11, fontFamily: 'KatakanaStyle' },
-  empty: { color: '#666', marginTop: 16 },
+  sectionTitle: {
+    color: Ron1nColors.white,
+    fontSize: 14,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  clearText: {
+    color: Ron1nColors.red,
+    fontSize: 11,
+    fontFamily: 'KatakanaStyle',
+  },
+  empty: {
+    color: Ron1nColors.gray,
+    marginTop: 16,
+  },
   activityRow: {
     marginTop: 12,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: 'rgba(255,255,255,0.035)',
     borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 14,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 16,
     padding: 14,
   },
-  activityTitle: { color: '#00FF41', fontSize: 12, fontFamily: 'KatakanaStyle' },
-  activityDetail: { color: '#aaa', fontSize: 11, marginTop: 6 },
-  activityTime: { color: '#555', fontSize: 10, marginTop: 8 },
+  activityTitle: {
+    color: Ron1nColors.green,
+    fontSize: 12,
+    fontFamily: 'KatakanaStyle',
+  },
+  activityDetail: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 6,
+  },
+  activityTime: {
+    color: Ron1nColors.muted,
+    fontSize: 10,
+    marginTop: 8,
+  },
 });
