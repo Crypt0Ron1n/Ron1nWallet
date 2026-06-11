@@ -14,6 +14,8 @@ export default function Ron1nScreen({ children }: { children: React.ReactNode })
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         bounces
+        decelerationRate="fast"
+        scrollEventThrottle={16}
       >
         {children}
       </ScrollView>

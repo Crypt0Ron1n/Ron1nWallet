@@ -8,18 +8,30 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
 import { useFonts, ZenDots_400Regular } from '@expo-google-fonts/zen-dots';
 import * as ScreenCapture from 'expo-screen-capture';
 import * as Clipboard from 'expo-clipboard';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { VaultService } from '../services/VaultService';
 import { WalletService } from '../services/WalletService';
 import { ActivityService } from '../services/ActivityService';
 import ReceiveModal, { type AssetInfo } from '../components/ReceiveModal';
+import Ron1nScreen from '../components/Ron1nScreen';
+import Ron1nCard from '../components/Ron1nCard';
+import Ron1nPressable from '../components/Ron1nPressable';
+import Ron1nAssetCard from '../components/Ron1nAssetCard';
+import { Ron1nColors } from '../theme/ron1nTheme';
+
+const ASSET_ACCENTS: Record<string, string> = {
+  ETH: Ron1nColors.blue,
+  BTC: Ron1nColors.gold,
+  LTC: Ron1nColors.green,
+  SOL: Ron1nColors.purple,
+};
 
 export default function WalletScreen() {
   const [synID, setSynID] = useState<string | null>(null);
@@ -43,10 +55,7 @@ export default function WalletScreen() {
     const secureApp = async () => {
       try {
         const id = await VaultService.getIdentity();
-
-        if (id) {
-          setSynID(id);
-        }
+        if (id) setSynID(id);
 
         const mnemonic = await VaultService.getMnemonic();
 
@@ -67,9 +76,7 @@ export default function WalletScreen() {
             'Vault loaded from SecureStore'
           );
 
-          if (__DEV__) {
-            console.log('Wallet restored from secure storage');
-          }
+          if (__DEV__) console.log('Wallet restored from secure storage');
         }
       } catch (e) {
         console.error('Vault boot error:', e);
@@ -86,16 +93,10 @@ export default function WalletScreen() {
       const lockScreenCapture = async () => {
         try {
           if (!mounted) return;
-
           await ScreenCapture.preventScreenCaptureAsync();
-
-          if (__DEV__) {
-            console.log('Screen capture protection enabled');
-          }
+          if (__DEV__) console.log('Screen capture protection enabled');
         } catch (e) {
-          if (__DEV__) {
-            console.warn('Screen capture protection not ready yet:', e);
-          }
+          if (__DEV__) console.warn('Screen capture protection not ready yet:', e);
         }
       };
 
@@ -118,16 +119,11 @@ export default function WalletScreen() {
     );
 
     await Clipboard.setStringAsync(synID);
-
-    if (__DEV__) {
-      console.log('Syn-ID copied');
-    }
   };
 
   const forgeIdentity = async () => {
     try {
       const mnemonic = WalletService.createMnemonic();
-
       await VaultService.saveMnemonic(mnemonic);
 
       const mnemonicArray = mnemonic.split(' ');
@@ -161,16 +157,11 @@ export default function WalletScreen() {
       const newID = `syn-${hash.substring(0, 8).toUpperCase()}`;
 
       await VaultService.saveIdentity(newID);
-
       await ActivityService.addActivity(
         'FORGE',
         'Wallet Forged',
         'New Syn-ID and wallet vault created'
       );
-
-      if (__DEV__) {
-        console.log('Vault Save Successful:', newID);
-      }
 
       setSynID(newID);
       setShowMnemonic(true);
@@ -191,108 +182,99 @@ export default function WalletScreen() {
 
   if (!fontsLoaded) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.glowOverlay} />
-        <View style={styles.greenGlow} />
-        <ActivityIndicator size="large" color="#00FF41" />
+      <SafeAreaView style={styles.loading}>
+        <ActivityIndicator size="large" color={Ron1nColors.green} />
       </SafeAreaView>
     );
   }
 
   return (
-    <LinearGradient
-      colors={['#050505', '#0A0014', '#050505']}
-      style={styles.container}
-    >
-      <View style={styles.glowOverlay} />
-      <View style={styles.greenGlow} />
-
+    <Ron1nScreen>
       <StatusBar barStyle="light-content" />
 
-      <View style={styles.header}>
-        <Text style={styles.brand}>RON1N</Text>
-        <Text style={styles.subtitle}>QUANTUM IDENTITY // ロニン</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>SYNDICATE ID</Text>
-        <Text style={styles.idText}>{synID || '---- ---- ----'}</Text>
-
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {synID ? 'QUANTUM HARDENED' : 'PENDING FORGE'}
-          </Text>
+      <SafeAreaView>
+        <View style={styles.hero}>
+          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
+          <Text style={styles.brand}>RON1N WALLET</Text>
+          <Text style={styles.subtitle}>Private by Default. Quantum Ready.</Text>
         </View>
 
-        {synID && (
-          <View style={styles.cardActions}>
-            <TouchableOpacity style={styles.smallButton} onPress={copySynID}>
-              <Text style={styles.smallButtonText}>COPY ID</Text>
-            </TouchableOpacity>
+        <Ron1nCard>
+          <Text style={styles.label}>SYNDICATE ID</Text>
+          <Text style={styles.idText}>{synID || '---- ---- ----'}</Text>
 
-            <TouchableOpacity
-              style={styles.smallButton}
-              onPress={async () => {
-                await ActivityService.addActivity(
-                  'RECEIVE_VIEW',
-                  'Viewed Syn-ID Receive',
-                  'Syndicate ID receive QR opened'
-                );
-
-                setSelectedAsset({
-                  symbol: 'SYN-ID',
-                  name: 'Syndicate Identity',
-                  address: synID,
-                });
-                setReceiveModalVisible(true);
-              }}
-            >
-              <Text style={styles.smallButtonText}>RECEIVE</Text>
-            </TouchableOpacity>
+          <View style={styles.statusPill}>
+            <Text style={styles.statusText}>
+              {synID ? 'VAULT SECURED' : 'PENDING FORGE'}
+            </Text>
           </View>
-        )}
-      </View>
 
-      <View style={styles.assetContainer}>
-        <Text style={styles.label}>QUANTUM ASSETS</Text>
+          {synID && (
+            <View style={styles.cardActions}>
+              <Ron1nPressable style={styles.smallButton} onPress={copySynID}>
+                <Text style={styles.smallButtonText}>COPY ID</Text>
+              </Ron1nPressable>
 
-        <ScrollView style={styles.assetScroll} showsVerticalScrollIndicator={false}>
-          {myAssets.map((asset) => (
-            <TouchableOpacity
-              key={asset.symbol}
-              style={styles.assetRow}
-              onPress={async () => {
-                await ActivityService.addActivity(
-                  'RECEIVE_VIEW',
-                  `Viewed ${asset.symbol} Receive`,
-                  'Receive QR opened'
-                );
+              <Ron1nPressable
+                style={styles.smallButtonBlue}
+                onPress={async () => {
+                  await ActivityService.addActivity(
+                    'RECEIVE_VIEW',
+                    'Viewed Syn-ID Receive',
+                    'Syndicate ID receive QR opened'
+                  );
 
-                setSelectedAsset(asset);
-                setReceiveModalVisible(true);
-              }}
-            >
-              <Text style={styles.assetName}>{asset.symbol}</Text>
-              <Text style={styles.assetBalance}>{asset.address.slice(0, 10)}...</Text>
-            </TouchableOpacity>
-          ))}
+                  setSelectedAsset({
+                    symbol: 'SYN-ID',
+                    name: 'Syndicate Identity',
+                    address: synID,
+                  });
+                  setReceiveModalVisible(true);
+                }}
+              >
+                <Text style={styles.smallButtonTextBlue}>RECEIVE</Text>
+              </Ron1nPressable>
+            </View>
+          )}
+        </Ron1nCard>
 
+        <Text style={styles.sectionTitle}>QUANTUM ASSETS</Text>
+
+        {myAssets.map((asset) => (
+          <Ron1nAssetCard
+            key={asset.symbol}
+            symbol={asset.symbol}
+            name={asset.name}
+            address={asset.address}
+            accent={ASSET_ACCENTS[asset.symbol] || Ron1nColors.green}
+            onPress={async () => {
+              await ActivityService.addActivity(
+                'RECEIVE_VIEW',
+                `Viewed ${asset.symbol} Receive`,
+                'Receive QR opened'
+              );
+
+              setSelectedAsset(asset);
+              setReceiveModalVisible(true);
+            }}
+          />
+        ))}
+
+        <View style={styles.comingGrid}>
           {['HBAR', 'XRP', 'XLM', 'ALGO'].map((asset) => (
-            <View key={asset} style={styles.assetRowDisabled}>
-              <Text style={styles.assetNameDisabled}>{asset}</Text>
-              <Text style={styles.assetBalanceDisabled}>COMING SOON</Text>
+            <View key={asset} style={styles.comingCard}>
+              <Text style={styles.comingAsset}>{asset}</Text>
+              <Text style={styles.comingText}>COMING SOON</Text>
             </View>
           ))}
-        </ScrollView>
+        </View>
 
-        <TouchableOpacity style={styles.swapButton}>
-          <Text style={styles.swapButtonText}>SWAP TO QUANTUM</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.button} onPress={forgeIdentity}>
-        <Text style={styles.buttonText}>{synID ? 'RE-FORGE' : 'FORGE ID'}</Text>
-      </TouchableOpacity>
+        <Ron1nPressable style={styles.primaryButton} onPress={forgeIdentity}>
+          <Text style={styles.primaryButtonText}>
+            {synID ? 'RE-FORGE VAULT' : 'FORGE ID'}
+          </Text>
+        </Ron1nPressable>
+      </SafeAreaView>
 
       <Modal visible={showMnemonic} animationType="slide">
         <SafeAreaView style={styles.modalContainer}>
@@ -335,13 +317,8 @@ export default function WalletScreen() {
             </ScrollView>
           )}
 
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setShowMnemonic(false)}
-          >
-            <Text style={styles.closeButtonText}>
-              I HAVE SECURED THESE WORDS
-            </Text>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setShowMnemonic(false)}>
+            <Text style={styles.closeButtonText}>I HAVE SECURED THESE WORDS</Text>
           </TouchableOpacity>
         </SafeAreaView>
       </Modal>
@@ -351,179 +328,154 @@ export default function WalletScreen() {
         onClose={() => setReceiveModalVisible(false)}
         asset={selectedAsset}
       />
-    </LinearGradient>
+    </Ron1nScreen>
   );
 }
 
-const PURPLE = '#B026FF';
-
 const styles = StyleSheet.create({
-  container: {
+  loading: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: Ron1nColors.black,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 40,
-    position: 'relative',
+    justifyContent: 'center',
   },
-  header: {
+  hero: {
     alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  logo: {
+    width: 118,
+    height: 118,
+    resizeMode: 'contain',
+    marginBottom: 8,
   },
   brand: {
-    color: PURPLE,
-    fontSize: 30,
+    color: Ron1nColors.gold,
+    fontSize: 24,
     fontWeight: '900',
-    letterSpacing: 5,
-    textShadowColor: PURPLE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    letterSpacing: 3,
     fontFamily: 'KatakanaStyle',
   },
   subtitle: {
-    color: '#00FF41',
-    fontSize: 10,
-    letterSpacing: 2,
-    marginTop: 5,
+    color: Ron1nColors.green,
+    fontSize: 11,
+    marginTop: 7,
     fontFamily: 'KatakanaStyle',
   },
-  card: {
-    width: '85%',
-    backgroundColor: '#111',
-    borderRadius: 20,
-    padding: 25,
-    borderWidth: 1,
-    borderColor: '#222',
-    alignItems: 'center',
-  },
   label: {
-    color: '#555',
+    color: Ron1nColors.gray,
     fontSize: 9,
     letterSpacing: 2,
     marginBottom: 10,
-    alignSelf: 'flex-start',
     fontFamily: 'KatakanaStyle',
   },
   idText: {
-    color: PURPLE,
-    fontSize: 16,
-    fontWeight: '700',
+    color: Ron1nColors.purple,
+    fontSize: 17,
+    fontWeight: '900',
     letterSpacing: 2,
-    textShadowColor: PURPLE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowColor: Ron1nColors.purple,
+    textShadowRadius: 10,
     fontFamily: 'KatakanaStyle',
-    marginTop: 15,
   },
-  badge: {
-    marginTop: 15,
+  statusPill: {
+    alignSelf: 'flex-start',
+    marginTop: 16,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 5,
-    backgroundColor: '#00FF4122',
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#00FF4118',
+    borderWidth: 1,
+    borderColor: '#00FF4144',
   },
-  badgeText: {
-    color: '#00FF41',
-    fontSize: 8,
-    fontWeight: 'bold',
+  statusText: {
+    color: Ron1nColors.green,
+    fontSize: 9,
+    fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
   cardActions: {
     flexDirection: 'row',
-    marginTop: 15,
+    marginTop: 16,
     gap: 10,
   },
   smallButton: {
-    backgroundColor: '#111',
     borderWidth: 1,
-    borderColor: '#00FF41',
+    borderColor: Ron1nColors.green,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: '#00FF4112',
+  },
+  smallButtonBlue: {
+    borderWidth: 1,
+    borderColor: Ron1nColors.blue,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: '#00D4FF12',
   },
   smallButtonText: {
-    color: '#00FF41',
+    color: Ron1nColors.green,
     fontSize: 9,
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  assetContainer: {
-    width: '85%',
-    marginTop: 10,
+  smallButtonTextBlue: {
+    color: Ron1nColors.blue,
+    fontSize: 9,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
   },
-  assetScroll: {
-    maxHeight: 220,
-    marginTop: 5,
+  sectionTitle: {
+    color: Ron1nColors.white,
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 12,
+    fontFamily: 'KatakanaStyle',
   },
-  assetRow: {
+  comingGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 18,
   },
-  assetName: {
-    color: '#00FF41',
-    fontWeight: '700',
-    opacity: 0.9,
-    fontSize: 13,
-    fontFamily: 'KatakanaStyle',
-  },
-  assetBalance: {
-    color: PURPLE,
-    fontSize: 13,
-    fontWeight: '400',
-    opacity: 0.85,
-    fontFamily: 'KatakanaStyle',
-  },
-  assetRowDisabled: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-    opacity: 0.4,
-  },
-  assetNameDisabled: {
-    color: '#00FF41',
-    fontWeight: '700',
-    fontSize: 13,
-    fontFamily: 'KatakanaStyle',
-  },
-  assetBalanceDisabled: {
-    color: PURPLE,
-    fontSize: 13,
-    fontWeight: '400',
-    fontFamily: 'KatakanaStyle',
-  },
-  swapButton: {
-    marginTop: 15,
-    backgroundColor: '#111',
+  comingCard: {
+    width: '48%',
+    backgroundColor: 'rgba(255,255,255,0.035)',
     borderWidth: 1,
-    borderColor: '#00FF41',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#00FF41',
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 18,
+    padding: 14,
   },
-  swapButtonText: {
-    color: '#00FF41',
-    fontWeight: '700',
-    fontSize: 10,
+  comingAsset: {
+    color: Ron1nColors.gray,
+    fontSize: 12,
+    fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  button: {
-    width: '85%',
-    height: 55,
-    backgroundColor: '#fff',
-    borderRadius: 30,
+  comingText: {
+    color: Ron1nColors.muted,
+    fontSize: 9,
+    marginTop: 8,
+    fontFamily: 'KatakanaStyle',
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: Ron1nColors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginTop: 6,
+    shadowColor: Ron1nColors.green,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#000',
     fontSize: 12,
     fontWeight: '900',
@@ -602,25 +554,5 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
-  },
-  glowOverlay: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    backgroundColor: '#B026FF',
-    opacity: 0.15,
-    borderRadius: 200,
-    top: 80,
-    alignSelf: 'center',
-  },
-  greenGlow: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    backgroundColor: '#00FF41',
-    opacity: 0.08,
-    borderRadius: 200,
-    top: 140,
-    alignSelf: 'center',
   },
 });
