@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,8 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
 import { ActivityService } from '../services/ActivityService';
+import { ProviderFactory } from '../services/providers/ProviderFactory';
+import { ChainProviderStatus } from '../services/providers/types';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
 type SendAsset = {
@@ -22,34 +25,42 @@ type SendAsset = {
   category: 'Native' | 'EVM' | 'Token';
 };
 
-const SEND_ASSETS: SendAsset[] = [
-  { symbol: 'BTC', name: 'Bitcoin', category: 'Native' },
-  { symbol: 'LTC', name: 'Litecoin', category: 'Native' },
-  { symbol: 'ETH', name: 'Ethereum', category: 'Native' },
-  { symbol: 'SOL', name: 'Solana', category: 'Native' },
-  { symbol: 'XRP', name: 'XRP Ledger', category: 'Native' },
-  { symbol: 'XLM', name: 'Stellar', category: 'Native' },
-  { symbol: 'ALGO', name: 'Algorand', category: 'Native' },
+const ASSET_META: Record<string, Omit<SendAsset, 'symbol'>> = {
+  BTC: { name: 'Bitcoin', category: 'Native' },
+  LTC: { name: 'Litecoin', category: 'Native' },
+  ETH: { name: 'Ethereum', category: 'Native' },
+  SOL: { name: 'Solana', category: 'Native' },
+  XRP: { name: 'XRP Ledger', category: 'Native' },
+  XLM: { name: 'Stellar', category: 'Native' },
+  ALGO: { name: 'Algorand', category: 'Native' },
 
-  { symbol: 'AVAX', name: 'Avalanche C-Chain', category: 'EVM' },
-  { symbol: 'CRO', name: 'Cronos', category: 'EVM' },
-  { symbol: 'BERA', name: 'Berachain', category: 'EVM' },
-  { symbol: 'BASE', name: 'Base', category: 'EVM' },
-  { symbol: 'POL', name: 'Polygon', category: 'EVM' },
-  { symbol: 'ARB', name: 'Arbitrum', category: 'EVM' },
+  AVAX: { name: 'Avalanche C-Chain', category: 'EVM' },
+  CRO: { name: 'Cronos', category: 'EVM' },
+  BERA: { name: 'Berachain', category: 'EVM' },
+  BASE: { name: 'Base', category: 'EVM' },
+  POL: { name: 'Polygon', category: 'EVM' },
+  ARB: { name: 'Arbitrum', category: 'EVM' },
 
-  { symbol: 'LINK', name: 'Chainlink', category: 'Token' },
-  { symbol: 'USDC', name: 'USD Coin', category: 'Token' },
-  { symbol: 'USDG', name: 'USDG', category: 'Token' },
-];
+  LINK: { name: 'Chainlink', category: 'Token' },
+  USDC: { name: 'USD Coin', category: 'Token' },
+  USDG: { name: 'USDG', category: 'Token' },
+};
+
+const SEND_ASSETS: SendAsset[] = ProviderFactory.getSupportedAssets().map((symbol) => ({
+  symbol,
+  ...(ASSET_META[symbol] ?? { name: symbol, category: 'Native' as const }),
+}));
 
 export default function SendScreen() {
-  const [asset, setAsset] = useState<SendAsset>(SEND_ASSETS[2]);
+  const [asset, setAsset] = useState<SendAsset>(
+    SEND_ASSETS.find((item) => item.symbol === 'ETH') ?? SEND_ASSETS[0]
+  );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [reviewOpen, setReviewOpen] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<ChainProviderStatus | null>(null);
 
   const openReview = async () => {
     if (!recipient.trim() || !amount.trim()) {
@@ -57,13 +68,30 @@ export default function SendScreen() {
       return;
     }
 
-    await ActivityService.addActivity(
-      'SEND_REVIEW',
-      'Send Review Opened',
-      `${amount} ${asset.symbol} to ${recipient.slice(0, 10)}...`
-    );
+    try {
+      const provider = ProviderFactory.getProvider(asset.symbol);
+      const status = await provider.getStatus();
+      const estimatedFee = await provider.estimateFee({
+        chain: status.chain,
+        asset: asset.symbol,
+        from: 'local-wallet-address',
+        to: recipient,
+        amount,
+      });
 
-    setReviewOpen(true);
+      setProviderStatus(status);
+
+      await ActivityService.addActivity(
+        'SEND_REVIEW',
+        'Send Review Opened',
+        `${amount} ${asset.symbol} to ${recipient.slice(0, 10)}... fee ${estimatedFee.toString()}`
+      );
+
+      setReviewOpen(true);
+    } catch (error) {
+      console.error('Send review failed:', error);
+      Alert.alert('Review Failed', 'Unable to prepare send review.');
+    }
   };
 
   const confirmSend = async () => {
@@ -73,7 +101,7 @@ export default function SendScreen() {
     }
 
     const auth = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Confirm Ron1n Send',
+      promptMessage: 'Confirm Shogun Send',
       fallbackLabel: 'Use device passcode',
     });
 
@@ -83,6 +111,7 @@ export default function SendScreen() {
         'Send Blocked',
         `${asset.symbol} biometric confirmation failed`
       );
+
       Alert.alert('Blocked', 'Biometric confirmation failed.');
       return;
     }
@@ -98,7 +127,7 @@ export default function SendScreen() {
 
     Alert.alert(
       'Broadcast Not Live Yet',
-      'Ron1n review flow is active. Real network broadcasting will connect in a later build.'
+      'Shogun Wallet review flow is active. Real network broadcasting will connect in a later build.'
     );
   };
 
@@ -144,7 +173,9 @@ export default function SendScreen() {
 
           <View style={styles.feeBox}>
             <Text style={styles.feeLabel}>NETWORK FEE</Text>
-            <Text style={styles.feeValue}>Estimated after broadcast engine is connected</Text>
+            <Text style={styles.feeValue}>
+              Estimated after live provider RPC is connected
+            </Text>
           </View>
 
           <TouchableOpacity style={styles.reviewButton} onPress={openReview}>
@@ -155,8 +186,8 @@ export default function SendScreen() {
         <View style={styles.warningCard}>
           <Text style={styles.warningTitle}>SECURITY LAYER NOTICE</Text>
           <Text style={styles.warningText}>
-            Ron1n helps protect keys, monitor exposure, and prepare assets for future
-            quantum migration. External chain transfers still follow the destination
+            Shogun Wallet helps protect keys, monitor exposure, and prepare assets for
+            future quantum migration. External chain transfers still follow the destination
             network’s rules and visibility.
           </Text>
         </View>
@@ -166,25 +197,30 @@ export default function SendScreen() {
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>SELECT ASSET</Text>
 
-              {SEND_ASSETS.map((item) => (
-                <TouchableOpacity
-                  key={item.symbol}
-                  style={styles.assetOption}
-                  onPress={() => {
-                    setAsset(item);
-                    setSelectorOpen(false);
-                  }}
-                >
-                  <View>
-                    <Text style={styles.optionSymbol}>{item.symbol}</Text>
-                    <Text style={styles.optionName}>{item.name}</Text>
-                  </View>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {SEND_ASSETS.map((item) => (
+                  <TouchableOpacity
+                    key={item.symbol}
+                    style={styles.assetOption}
+                    onPress={() => {
+                      setAsset(item);
+                      setSelectorOpen(false);
+                    }}
+                  >
+                    <View>
+                      <Text style={styles.optionSymbol}>{item.symbol}</Text>
+                      <Text style={styles.optionName}>{item.name}</Text>
+                    </View>
 
-                  <Text style={styles.optionCategory}>{item.category}</Text>
-                </TouchableOpacity>
-              ))}
+                    <Text style={styles.optionCategory}>{item.category}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setSelectorOpen(false)}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setSelectorOpen(false)}
+              >
                 <Text style={styles.cancelButtonText}>CANCEL</Text>
               </TouchableOpacity>
             </View>
@@ -201,6 +237,15 @@ export default function SendScreen() {
               <Text style={styles.reviewLine}>Amount: {amount}</Text>
               <Text style={styles.reviewAddress}>To: {recipient}</Text>
 
+              {providerStatus && (
+                <View style={styles.providerBox}>
+                  <Text style={styles.providerText}>
+                    Provider: {providerStatus.family} / {providerStatus.mode}
+                  </Text>
+                  <Text style={styles.providerText}>{providerStatus.message}</Text>
+                </View>
+              )}
+
               <TouchableOpacity
                 style={[styles.checkBox, acknowledged && styles.checkBoxActive]}
                 onPress={() => setAcknowledged(!acknowledged)}
@@ -216,7 +261,10 @@ export default function SendScreen() {
                 <Text style={styles.confirmButtonText}>BIOMETRIC CONFIRM</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setReviewOpen(false)}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setReviewOpen(false)}
+              >
                 <Text style={styles.cancelButtonText}>CANCEL</Text>
               </TouchableOpacity>
             </View>
@@ -394,6 +442,19 @@ const styles = StyleSheet.create({
     color: Ron1nColors.purple,
     marginTop: 14,
     fontFamily: 'monospace',
+  },
+  providerBox: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#222',
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#111',
+  },
+  providerText: {
+    color: Ron1nColors.gray,
+    fontSize: 10,
+    lineHeight: 16,
   },
   checkBox: {
     marginTop: 22,

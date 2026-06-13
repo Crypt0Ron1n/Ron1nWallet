@@ -1,5 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -15,6 +22,8 @@ import {
 import { SecurityScoreService } from '../services/SecurityScoreService';
 import { AddressRotationService } from '../services/AddressRotationService';
 import { AssetSecurityService } from '../services/AssetSecurityService';
+import { ProviderHealthService } from '../services/ProviderHealthService';
+import { ChainProviderStatus } from '../services/providers/types';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
 const DEMO_ASSETS = [
@@ -30,24 +39,32 @@ const DEMO_ASSETS = [
 export default function SecurityScreen() {
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [exposure, setExposure] = useState<QuantumExposureRecord[]>([]);
+  const [providerStatuses, setProviderStatuses] = useState<ChainProviderStatus[]>([]);
   const [score, setScore] = useState(92);
 
   const load = async () => {
-    const activityData = await ActivityService.getActivities();
-    const exposureData = await QuantumExposureService.getAllExposure();
+    try {
+      const activityData = await ActivityService.getActivities();
+      const exposureData = await QuantumExposureService.getAllExposure();
+      const providerData = await ProviderHealthService.getAllStatuses();
 
-    setActivities(activityData);
-    setExposure(exposureData);
+      setActivities(activityData);
+      setExposure(exposureData);
+      setProviderStatuses(providerData);
 
-    setScore(
-      SecurityScoreService.calculate({
-        biometricsEnabled: true,
-        vaultProtected: true,
-        mnemonicBackedUp: true,
-        records: exposureData,
-        recentRotation: exposureData.some((item) => item.status === 'PROTECTED'),
-      })
-    );
+      setScore(
+        SecurityScoreService.calculate({
+          biometricsEnabled: true,
+          vaultProtected: true,
+          mnemonicBackedUp: true,
+          records: exposureData,
+          recentRotation: exposureData.some((item) => item.status === 'PROTECTED'),
+        })
+      );
+    } catch (error) {
+      console.error('Security screen load failed:', error);
+      Alert.alert('Security Load Error', 'Unable to refresh Ron1n security data.');
+    }
   };
 
   useFocusEffect(
@@ -57,51 +74,69 @@ export default function SecurityScreen() {
   );
 
   const runScan = async () => {
-    for (const asset of DEMO_ASSETS) {
-      await QuantumExposureService.scanAsset(asset.symbol, asset.address);
-      await AssetSecurityService.setState(asset.symbol, 'QUANTUM_READY');
+    try {
+      for (const asset of DEMO_ASSETS) {
+        await QuantumExposureService.scanAsset(asset.symbol, asset.address);
+        await AssetSecurityService.setState(asset.symbol, 'QUANTUM_READY');
+      }
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        'Quantum Exposure Scan',
+        'Address exposure model refreshed'
+      );
+
+      await load();
+    } catch (error) {
+      console.error('Exposure scan failed:', error);
+      Alert.alert('Scan Failed', 'Unable to complete exposure scan.');
     }
-
-    await ActivityService.addActivity(
-      'SECURITY',
-      'Quantum Exposure Scan',
-      'Address exposure model refreshed'
-    );
-
-    await load();
   };
 
   const simulateExposure = async () => {
-    await QuantumExposureService.simulateActivity('ETH', 'Current ETH address', 8);
-    await AssetSecurityService.setState('ETH', 'ROTATION_RECOMMENDED');
+    try {
+      await QuantumExposureService.simulateActivity('ETH', 'Current ETH address', 8);
+      await AssetSecurityService.setState('ETH', 'ROTATION_RECOMMENDED');
 
-    await ActivityService.addActivity(
-      'SECURITY',
-      'ETH Exposure Simulated',
-      'ETH address marked as exposed for testing'
-    );
+      await ActivityService.addActivity(
+        'SECURITY',
+        'ETH Exposure Simulated',
+        'ETH address marked as exposed for testing'
+      );
 
-    await load();
+      await load();
+    } catch (error) {
+      console.error('Exposure simulation failed:', error);
+      Alert.alert('Simulation Failed', 'Unable to simulate exposure.');
+    }
   };
 
   const quantumHarden = async (record: QuantumExposureRecord) => {
-    const rotation = await AddressRotationService.prepareRotation(record.symbol, record.address);
+    try {
+      const rotation = await AddressRotationService.prepareRotation(
+        record.symbol,
+        record.address
+      );
 
-    await QuantumExposureService.markProtected(record.symbol, record.address);
-    await AssetSecurityService.setState(record.symbol, 'PROTECTED');
+      await QuantumExposureService.markProtected(record.symbol, record.address);
+      await AssetSecurityService.setState(record.symbol, 'PROTECTED');
 
-    await ActivityService.addActivity(
-      'SECURITY',
-      `${record.symbol} Quantum Hardened`,
-      `${rotation.newAddressLabel} prepared`
-    );
+      await ActivityService.addActivity(
+        'SECURITY',
+        `${record.symbol} Quantum Hardened`,
+        `${rotation.newAddressLabel} prepared`
+      );
 
-    await load();
+      await load();
 
-    Alert.alert(
-      'Quantum Hardened',
-      `${record.symbol} is now marked as protected. Live migration broadcast connects later.`
-    );
+      Alert.alert(
+        'Quantum Hardened',
+        `${record.symbol} is now marked as protected. Live migration broadcast connects later.`
+      );
+    } catch (error) {
+      console.error('Quantum harden failed:', error);
+      Alert.alert('Harden Failed', `Unable to harden ${record.symbol}.`);
+    }
   };
 
   const clearHistory = async () => {
@@ -124,7 +159,9 @@ export default function SecurityScreen() {
         <View style={styles.hero}>
           <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
           <Text style={styles.title}>SECURITY LAYER</Text>
-          <Text style={styles.subtitle}>Not another token. A quantum readiness platform.</Text>
+          <Text style={styles.subtitle}>
+            Not another token. A quantum readiness platform.
+          </Text>
         </View>
 
         <Ron1nCard>
@@ -146,10 +183,35 @@ export default function SecurityScreen() {
         </View>
 
         <Ron1nCard>
+          <Text style={styles.cardTitle}>PROVIDER INFRASTRUCTURE</Text>
+          <Text style={styles.cardText}>
+            ProviderFactory is installed. Live RPC connections, balances, history,
+            and real exposure analysis plug into this layer next.
+          </Text>
+
+          {providerStatuses.length === 0 ? (
+            <Text style={styles.emptyProvider}>No provider statuses loaded.</Text>
+          ) : (
+            providerStatuses.slice(0, 12).map((provider, index) => (
+              <View
+                key={`${provider.chain}-${provider.family}-${index}`}
+                style={styles.providerRow}
+              >
+                <Text style={styles.providerChain}>{provider.chain}</Text>
+                <Text style={styles.providerMode}>
+                  {provider.family} / {provider.mode}
+                </Text>
+              </View>
+            ))
+          )}
+        </Ron1nCard>
+
+        <Ron1nCard>
           <Text style={styles.cardTitle}>RON1N IS A SECURITY LAYER</Text>
           <Text style={styles.cardText}>
             Your assets remain BTC, ETH, XRP, SOL and the networks you already use.
-            Ron1n provides exposure analysis, address hygiene, security scoring, and quantum migration readiness.
+            Ron1n provides exposure analysis, address hygiene, security scoring,
+            and quantum migration readiness.
           </Text>
 
           <TouchableOpacity style={styles.primaryButton} onPress={runScan}>
@@ -157,7 +219,9 @@ export default function SecurityScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryButton} onPress={simulateExposure}>
-            <Text style={styles.secondaryButtonText}>DEMO: SIMULATE ETH EXPOSURE</Text>
+            <Text style={styles.secondaryButtonText}>
+              DEMO: SIMULATE ETH EXPOSURE
+            </Text>
           </TouchableOpacity>
         </Ron1nCard>
 
@@ -182,7 +246,10 @@ export default function SecurityScreen() {
             {(item.status === 'EXPOSED' ||
               item.status === 'WATCHLIST' ||
               item.status === 'ROTATION_RECOMMENDED') && (
-              <TouchableOpacity style={styles.primaryButton} onPress={() => quantumHarden(item)}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => quantumHarden(item)}
+              >
                 <Text style={styles.primaryButtonText}>QUANTUM HARDEN ADDRESS</Text>
               </TouchableOpacity>
             )}
@@ -196,8 +263,9 @@ export default function SecurityScreen() {
         <Ron1nCard>
           <Text style={styles.cardTitle}>POST-QUANTUM VAULT</Text>
           <Text style={styles.cardText}>
-            ML-KEM vault wrapping is next. Until then, Ron1n protects keys with SecureStore,
-            biometric access, exposure visibility, and address rotation architecture.
+            ML-KEM vault wrapping is next. Until then, Ron1n protects keys with
+            SecureStore, biometric access, exposure visibility, and address rotation
+            architecture.
           </Text>
           <Text style={styles.pending}>STATUS: NATIVE BRIDGE REQUIRED</Text>
         </Ron1nCard>
@@ -344,6 +412,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 10,
     lineHeight: 18,
+  },
+  providerRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+    paddingBottom: 8,
+  },
+  providerChain: {
+    color: Ron1nColors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  providerMode: {
+    color: Ron1nColors.gray,
+    fontSize: 10,
+    fontFamily: 'KatakanaStyle',
+  },
+  emptyProvider: {
+    color: Ron1nColors.gray,
+    fontSize: 11,
+    marginTop: 12,
   },
   pending: {
     color: Ron1nColors.gold,
