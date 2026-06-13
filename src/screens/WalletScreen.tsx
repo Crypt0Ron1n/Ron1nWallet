@@ -31,6 +31,15 @@ const ASSET_ACCENTS: Record<string, string> = {
   BTC: Ron1nColors.gold,
   LTC: Ron1nColors.green,
   SOL: Ron1nColors.purple,
+  XRP: Ron1nColors.blue,
+  XLM: Ron1nColors.green,
+  ALGO: Ron1nColors.gold,
+  AVAX: '#E84142',
+  CRO: '#103F68',
+  BERA: '#F5B642',
+  BASE: Ron1nColors.blue,
+  POL: Ron1nColors.purple,
+  ARB: Ron1nColors.blue,
 };
 
 export default function WalletScreen() {
@@ -46,6 +55,9 @@ export default function WalletScreen() {
   const [btcAddress, setBtcAddress] = useState<string | null>(null);
   const [ltcAddress, setLtcAddress] = useState<string | null>(null);
   const [solAddress, setSolAddress] = useState<string | null>(null);
+  const [xrpAddress, setXrpAddress] = useState<string | null>(null);
+  const [xlmAddress, setXlmAddress] = useState<string | null>(null);
+  const [algoAddress, setAlgoAddress] = useState<string | null>(null);
 
   const [fontsLoaded] = useFonts({
     KatakanaStyle: ZenDots_400Regular,
@@ -64,11 +76,17 @@ export default function WalletScreen() {
           const btc = WalletService.getBitcoinWallet(mnemonic);
           const ltc = WalletService.getLitecoinWallet(mnemonic);
           const sol = WalletService.getSolanaWallet(mnemonic);
+          const xrp = WalletService.getXrpWallet(mnemonic);
+          const xlm = WalletService.getStellarWallet(mnemonic);
+          const algo = WalletService.getAlgorandWallet(mnemonic);
 
           setEthAddress(eth.address);
           setBtcAddress(btc.address);
           setLtcAddress(ltc.address);
           setSolAddress(sol.address);
+          setXrpAddress(xrp.address);
+          setXlmAddress(xlm.address);
+          setAlgoAddress(algo.address);
 
           await ActivityService.addActivity(
             'RESTORE',
@@ -132,11 +150,17 @@ export default function WalletScreen() {
       const btcWallet = WalletService.getBitcoinWallet(mnemonic);
       const ltcWallet = WalletService.getLitecoinWallet(mnemonic);
       const solWallet = WalletService.getSolanaWallet(mnemonic);
+      const xrpWallet = WalletService.getXrpWallet(mnemonic);
+      const xlmWallet = WalletService.getStellarWallet(mnemonic);
+const algoWallet = WalletService.getAlgorandWallet(mnemonic);
 
       setEthAddress(ethWallet.address);
       setBtcAddress(btcWallet.address);
       setLtcAddress(ltcWallet.address);
       setSolAddress(solWallet.address);
+      setXrpAddress(xrpWallet.address);
+      setXlmAddress(xlmWallet.address);
+setAlgoAddress(algoWallet.address);
 
       if (__DEV__) {
         console.log('ETH Address:', ethWallet.address);
@@ -170,15 +194,22 @@ export default function WalletScreen() {
     }
   };
 
-  const myAssets = [
-    { symbol: 'ETH', name: 'Ethereum', address: ethAddress },
-    { symbol: 'BTC', name: 'Bitcoin', address: btcAddress },
-    { symbol: 'LTC', name: 'Litecoin', address: ltcAddress },
-    { symbol: 'SOL', name: 'Solana', address: solAddress },
-  ].filter(
-    (asset): asset is AssetInfo =>
-      typeof asset.address === 'string' && asset.address.length > 0
-  );
+const myAssets = [
+  { symbol: 'ETH', name: 'Ethereum', address: ethAddress },
+  { symbol: 'BTC', name: 'Bitcoin', address: btcAddress },
+  { symbol: 'LTC', name: 'Litecoin', address: ltcAddress },
+  { symbol: 'SOL', name: 'Solana', address: solAddress },
+  { symbol: 'XRP', name: 'XRP Ledger', address: xrpAddress },
+  { symbol: 'XLM', name: 'Stellar', address: xlmAddress },
+  { symbol: 'ALGO', name: 'Algorand', address: algoAddress },
+].filter(
+  (asset): asset is AssetInfo =>
+    typeof asset.address === 'string' && asset.address.length > 0
+);
+const evmAssets =
+  ethAddress !== null
+    ? WalletService.getEvmNetworks(ethAddress).filter((asset) => asset.symbol !== 'ETH')
+    : [];
 
   if (!fontsLoaded) {
     return (
@@ -260,8 +291,31 @@ export default function WalletScreen() {
           />
         ))}
 
+<Text style={styles.sectionTitle}>EVM NETWORKS</Text>
+
+{evmAssets.map((asset) => (
+  <Ron1nAssetCard
+    key={asset.symbol}
+    symbol={asset.symbol}
+    name={asset.name}
+    address={asset.address}
+    accent={ASSET_ACCENTS[asset.symbol] || Ron1nColors.blue}
+    onPress={async () => {
+      await ActivityService.addActivity(
+        'RECEIVE_VIEW',
+        `Viewed ${asset.symbol} Receive`,
+        `${asset.name} uses your EVM address`
+      );
+
+      setSelectedAsset(asset);
+      setReceiveModalVisible(true);
+    }}
+  />
+))}
+
+        <Text style={styles.sectionTitle}>COMING SOON</Text>
         <View style={styles.comingGrid}>
-          {['HBAR', 'XRP', 'XLM', 'ALGO'].map((asset) => (
+          {['HBAR', 'SUI', 'ADA', 'ICP', 'ZEC', 'XMR'].map((asset) => (
             <View key={asset} style={styles.comingCard}>
               <Text style={styles.comingAsset}>{asset}</Text>
               <Text style={styles.comingText}>COMING SOON</Text>

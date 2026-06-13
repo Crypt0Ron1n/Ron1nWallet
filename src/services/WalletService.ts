@@ -6,6 +6,17 @@ import { ethers } from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+import { derivePath } from 'ed25519-hd-key';
+import { deriveAddress, deriveKeypair, generateSeed } from 'ripple-keypairs';
+import { Keypair as StellarKeypair } from '@stellar/stellar-base';
+import algosdk from 'algosdk';
+
+export type Ron1nEvmNetwork = {
+  symbol: string;
+  name: string;
+  address: string;
+  chainId: number;
+};
 
 export class WalletService {
   static createMnemonic(): string {
@@ -34,7 +45,6 @@ export class WalletService {
     const seed = this.getSeed(mnemonic);
     const root = this.getRoot(seed);
     const path = "m/84'/0'/0'/0/0";
-
     const child = root.derive(path);
 
     if (!child.publicKey || !child.privateKey) {
@@ -61,7 +71,6 @@ export class WalletService {
     const seed = this.getSeed(mnemonic);
     const root = this.getRoot(seed);
     const path = "m/84'/2'/0'/0/0";
-
     const child = root.derive(path);
 
     if (!child.publicKey || !child.privateKey) {
@@ -98,14 +107,80 @@ export class WalletService {
 
   static getSolanaWallet(mnemonic: string) {
     const seed = this.getSeed(mnemonic);
-    const seed32 = seed.slice(0, 32);
-
+    const path = "m/44'/501'/0'/0'";
+    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
+    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
     const keypair = nacl.sign.keyPair.fromSeed(seed32);
 
     return {
       address: bs58.encode(keypair.publicKey),
       secretKey: Buffer.from(keypair.secretKey).toString('hex'),
-      path: 'ed25519-seed',
+      path,
     };
+  }
+
+  static getXrpWallet(mnemonic: string) {
+    const seed = this.getSeed(mnemonic);
+    const root = this.getRoot(seed);
+    const path = "m/44'/144'/0'/0/0";
+    const child = root.derive(path);
+
+    if (!child.privateKey) {
+      throw new Error('Failed to derive XRP key');
+    }
+
+    const entropy = Buffer.from(child.privateKey).subarray(0, 16);
+    const familySeed = generateSeed({ entropy });
+    const keypair = deriveKeypair(familySeed);
+    const address = deriveAddress(keypair.publicKey);
+
+    return {
+      address,
+      seed: familySeed,
+      publicKey: keypair.publicKey,
+      privateKey: keypair.privateKey,
+      path,
+    };
+  }
+
+  static getStellarWallet(mnemonic: string) {
+    const seed = this.getSeed(mnemonic);
+    const path = "m/44'/148'/0'";
+    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
+    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
+    const keypair = StellarKeypair.fromRawEd25519Seed(seed32);
+
+    return {
+      address: keypair.publicKey(),
+      secret: keypair.secret(),
+      path,
+    };
+  }
+
+  static getAlgorandWallet(mnemonic: string) {
+    const seed = this.getSeed(mnemonic);
+    const path = "m/44'/283'/0'/0'/0'";
+    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
+    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
+    const keypair = nacl.sign.keyPair.fromSeed(seed32);
+    const address = algosdk.encodeAddress(keypair.publicKey);
+
+    return {
+      address,
+      secretKeyHex: Buffer.from(keypair.secretKey).toString('hex'),
+      path,
+    };
+  }
+
+  static getEvmNetworks(ethAddress: string): Ron1nEvmNetwork[] {
+    return [
+      { symbol: 'ETH', name: 'Ethereum', address: ethAddress, chainId: 1 },
+      { symbol: 'AVAX', name: 'Avalanche C-Chain', address: ethAddress, chainId: 43114 },
+      { symbol: 'CRO', name: 'Cronos', address: ethAddress, chainId: 25 },
+      { symbol: 'BERA', name: 'Berachain', address: ethAddress, chainId: 80094 },
+      { symbol: 'BASE', name: 'Base', address: ethAddress, chainId: 8453 },
+      { symbol: 'POL', name: 'Polygon', address: ethAddress, chainId: 137 },
+      { symbol: 'ARB', name: 'Arbitrum', address: ethAddress, chainId: 42161 },
+    ];
   }
 }

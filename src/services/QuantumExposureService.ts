@@ -1,39 +1,74 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type QuantumExposureStatus =
-  | 'UNEXPOSED'
+export type ExposureStatus =
+  | 'SAFE'
+  | 'WATCHLIST'
   | 'EXPOSED'
-  | 'MIGRATION_READY'
+  | 'ROTATION_RECOMMENDED'
   | 'PROTECTED'
   | 'UNKNOWN';
 
 export type QuantumExposureRecord = {
   symbol: string;
   address: string;
-  publicKeyExposed: boolean;
-  hasSentTransactions: boolean;
   txCount: number;
-  status: QuantumExposureStatus;
+  hasSentTransactions: boolean;
+  publicKeyExposed: boolean;
+  status: ExposureStatus;
   recommendation: string;
   updatedAt: string;
 };
 
-const KEY = 'ron1n_quantum_exposure_v1';
+const KEY = 'ron1n_quantum_exposure_v2';
+
+function classify(txCount: number, hasSentTransactions: boolean): ExposureStatus {
+  if (!hasSentTransactions && txCount === 0) return 'SAFE';
+  if (hasSentTransactions && txCount <= 5) return 'WATCHLIST';
+  if (hasSentTransactions && txCount > 5 && txCount <= 20) return 'EXPOSED';
+  if (hasSentTransactions && txCount > 20) return 'ROTATION_RECOMMENDED';
+  return 'UNKNOWN';
+}
+
+function recommendation(status: ExposureStatus) {
+  if (status === 'SAFE') {
+    return 'No known outgoing transactions. Public key exposure appears low.';
+  }
+
+  if (status === 'WATCHLIST') {
+    return 'Address has signed transactions. Monitor exposure and consider rotating soon.';
+  }
+
+  if (status === 'EXPOSED') {
+    return 'Public key exposure detected. Address rotation is recommended.';
+  }
+
+  if (status === 'ROTATION_RECOMMENDED') {
+    return 'High activity detected. Rotate into a fresh address when possible.';
+  }
+
+  if (status === 'PROTECTED') {
+    return 'Asset is marked as quantum-hardened through Ron1n address hygiene.';
+  }
+
+  return 'Exposure unknown. Connect RPC scanner for live verification.';
+}
 
 export class QuantumExposureService {
   static async scanAsset(symbol: string, address: string): Promise<QuantumExposureRecord> {
     const existing = await this.getExposure(symbol);
 
+    const txCount = existing?.txCount ?? 0;
+    const hasSentTransactions = existing?.hasSentTransactions ?? false;
+    const status = existing?.status ?? classify(txCount, hasSentTransactions);
+
     const record: QuantumExposureRecord = {
       symbol,
       address,
-      publicKeyExposed: existing?.publicKeyExposed ?? false,
-      hasSentTransactions: existing?.hasSentTransactions ?? false,
-      txCount: existing?.txCount ?? 0,
-      status: existing?.status ?? 'UNEXPOSED',
-      recommendation:
-        existing?.recommendation ??
-        'Address has no known outgoing transactions. Public key exposure appears low.',
+      txCount,
+      hasSentTransactions,
+      publicKeyExposed: hasSentTransactions,
+      status,
+      recommendation: recommendation(status),
       updatedAt: new Date().toISOString(),
     };
 
@@ -41,15 +76,18 @@ export class QuantumExposureService {
     return record;
   }
 
-  static async markExposed(symbol: string, address: string) {
+  static async simulateActivity(symbol: string, address: string, txCount: number) {
+    const hasSentTransactions = txCount > 0;
+    const status = classify(txCount, hasSentTransactions);
+
     const record: QuantumExposureRecord = {
       symbol,
       address,
-      publicKeyExposed: true,
-      hasSentTransactions: true,
-      txCount: 1,
-      status: 'EXPOSED',
-      recommendation: 'Public key exposure detected. Address rotation is recommended.',
+      txCount,
+      hasSentTransactions,
+      publicKeyExposed: hasSentTransactions,
+      status,
+      recommendation: recommendation(status),
       updatedAt: new Date().toISOString(),
     };
 
@@ -61,11 +99,11 @@ export class QuantumExposureService {
     const record: QuantumExposureRecord = {
       symbol,
       address,
-      publicKeyExposed: false,
-      hasSentTransactions: false,
       txCount: 0,
+      hasSentTransactions: false,
+      publicKeyExposed: false,
       status: 'PROTECTED',
-      recommendation: 'Asset is marked as quantum-hardened inside Ron1n.',
+      recommendation: recommendation('PROTECTED'),
       updatedAt: new Date().toISOString(),
     };
 
