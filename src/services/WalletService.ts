@@ -6,7 +6,6 @@ import { ethers } from 'ethers';
 import * as bitcoin from 'bitcoinjs-lib';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
-import { derivePath } from 'ed25519-hd-key';
 import { deriveAddress, deriveKeypair, generateSeed } from 'ripple-keypairs';
 import { Keypair as StellarKeypair } from '@stellar/stellar-base';
 import algosdk from 'algosdk';
@@ -29,6 +28,15 @@ export class WalletService {
 
   static getRoot(seed: Uint8Array) {
     return HDKey.fromMasterSeed(seed);
+  }
+
+  private static derive32Bytes(mnemonic: string, label: string) {
+    const seed = this.getSeed(mnemonic);
+    const digest = ethers.sha256(
+      Buffer.concat([Buffer.from(seed), Buffer.from(label, 'utf8')])
+    );
+
+    return Buffer.from(ethers.getBytes(digest)).subarray(0, 32);
   }
 
   static getEthereumWallet(mnemonic: string) {
@@ -106,16 +114,13 @@ export class WalletService {
   }
 
   static getSolanaWallet(mnemonic: string) {
-    const seed = this.getSeed(mnemonic);
-    const path = "m/44'/501'/0'/0'";
-    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
-    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
+    const seed32 = this.derive32Bytes(mnemonic, "RON1N_SOL_m/44'/501'/0'/0'");
     const keypair = nacl.sign.keyPair.fromSeed(seed32);
 
     return {
       address: bs58.encode(keypair.publicKey),
       secretKey: Buffer.from(keypair.secretKey).toString('hex'),
-      path,
+      path: "ron1n-deterministic-sol",
     };
   }
 
@@ -144,31 +149,25 @@ export class WalletService {
   }
 
   static getStellarWallet(mnemonic: string) {
-    const seed = this.getSeed(mnemonic);
-    const path = "m/44'/148'/0'";
-    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
-    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
+    const seed32 = this.derive32Bytes(mnemonic, "RON1N_XLM_m/44'/148'/0'");
     const keypair = StellarKeypair.fromRawEd25519Seed(seed32);
 
     return {
       address: keypair.publicKey(),
       secret: keypair.secret(),
-      path,
+      path: 'ron1n-deterministic-xlm',
     };
   }
 
   static getAlgorandWallet(mnemonic: string) {
-    const seed = this.getSeed(mnemonic);
-    const path = "m/44'/283'/0'/0'/0'";
-    const derivedSeed = derivePath(path, Buffer.from(seed).toString('hex')).key;
-    const seed32 = Buffer.from(derivedSeed).subarray(0, 32);
+    const seed32 = this.derive32Bytes(mnemonic, "RON1N_ALGO_m/44'/283'/0'/0'/0'");
     const keypair = nacl.sign.keyPair.fromSeed(seed32);
     const address = algosdk.encodeAddress(keypair.publicKey);
 
     return {
       address,
       secretKeyHex: Buffer.from(keypair.secretKey).toString('hex'),
-      path,
+      path: 'ron1n-deterministic-algo',
     };
   }
 

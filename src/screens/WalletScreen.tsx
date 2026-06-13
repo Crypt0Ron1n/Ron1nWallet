@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  StatusBar,
-  Modal,
-  ScrollView,
   ActivityIndicator,
   Image,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Crypto from 'expo-crypto';
@@ -16,31 +16,21 @@ import { useFonts, ZenDots_400Regular } from '@expo-google-fonts/zen-dots';
 import * as ScreenCapture from 'expo-screen-capture';
 import * as Clipboard from 'expo-clipboard';
 
-import { VaultService } from '../services/VaultService';
-import { WalletService } from '../services/WalletService';
-import { ActivityService } from '../services/ActivityService';
+import { getAssetConfig } from '../config/assetCatalog';
+import { getAssetVisual } from '../config/assetVisuals';
 import ReceiveModal, { type AssetInfo } from '../components/ReceiveModal';
-import Ron1nScreen from '../components/Ron1nScreen';
+import Ron1nAssetCard from '../components/Ron1nAssetCard';
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nPressable from '../components/Ron1nPressable';
-import Ron1nAssetCard from '../components/Ron1nAssetCard';
+import Ron1nScreen from '../components/Ron1nScreen';
+import { ActivityService } from '../services/ActivityService';
+import { BalanceService } from '../services/balances/BalanceService';
+import { Ron1nBalance } from '../services/balances/types';
+import { TransactionService } from '../services/transactions/TransactionService';
+import { Ron1nTransaction } from '../services/transactions/types';
+import { VaultService } from '../services/VaultService';
+import { WalletService } from '../services/WalletService';
 import { Ron1nColors } from '../theme/ron1nTheme';
-
-const ASSET_ACCENTS: Record<string, string> = {
-  ETH: Ron1nColors.blue,
-  BTC: Ron1nColors.gold,
-  LTC: Ron1nColors.green,
-  SOL: Ron1nColors.purple,
-  XRP: Ron1nColors.blue,
-  XLM: Ron1nColors.green,
-  ALGO: Ron1nColors.gold,
-  AVAX: '#E84142',
-  CRO: '#103F68',
-  BERA: '#F5B642',
-  BASE: Ron1nColors.blue,
-  POL: Ron1nColors.purple,
-  ARB: Ron1nColors.blue,
-};
 
 export default function WalletScreen() {
   const [synID, setSynID] = useState<string | null>(null);
@@ -59,6 +49,10 @@ export default function WalletScreen() {
   const [xlmAddress, setXlmAddress] = useState<string | null>(null);
   const [algoAddress, setAlgoAddress] = useState<string | null>(null);
 
+  const [balances, setBalances] = useState<Record<string, Ron1nBalance>>({});
+  const [history, setHistory] = useState<Record<string, Ron1nTransaction[]>>({});
+  const [syncing, setSyncing] = useState(false);
+
   const [fontsLoaded] = useFonts({
     KatakanaStyle: ZenDots_400Regular,
   });
@@ -72,29 +66,13 @@ export default function WalletScreen() {
         const mnemonic = await VaultService.getMnemonic();
 
         if (mnemonic) {
-          const eth = WalletService.getEthereumWallet(mnemonic);
-          const btc = WalletService.getBitcoinWallet(mnemonic);
-          const ltc = WalletService.getLitecoinWallet(mnemonic);
-          const sol = WalletService.getSolanaWallet(mnemonic);
-          const xrp = WalletService.getXrpWallet(mnemonic);
-          const xlm = WalletService.getStellarWallet(mnemonic);
-          const algo = WalletService.getAlgorandWallet(mnemonic);
-
-          setEthAddress(eth.address);
-          setBtcAddress(btc.address);
-          setLtcAddress(ltc.address);
-          setSolAddress(sol.address);
-          setXrpAddress(xrp.address);
-          setXlmAddress(xlm.address);
-          setAlgoAddress(algo.address);
+          hydrateWallet(mnemonic);
 
           await ActivityService.addActivity(
             'RESTORE',
             'Wallet Restored',
             'Vault loaded from SecureStore'
           );
-
-          if (__DEV__) console.log('Wallet restored from secure storage');
         }
       } catch (e) {
         console.error('Vault boot error:', e);
@@ -112,7 +90,6 @@ export default function WalletScreen() {
         try {
           if (!mounted) return;
           await ScreenCapture.preventScreenCaptureAsync();
-          if (__DEV__) console.log('Screen capture protection enabled');
         } catch (e) {
           if (__DEV__) console.warn('Screen capture protection not ready yet:', e);
         }
@@ -126,6 +103,73 @@ export default function WalletScreen() {
       clearTimeout(timeoutId);
     };
   }, []);
+
+  const hydrateWallet = (mnemonic: string) => {
+    const eth = WalletService.getEthereumWallet(mnemonic);
+    const btc = WalletService.getBitcoinWallet(mnemonic);
+    const ltc = WalletService.getLitecoinWallet(mnemonic);
+    const sol = WalletService.getSolanaWallet(mnemonic);
+    const xrp = WalletService.getXrpWallet(mnemonic);
+    const xlm = WalletService.getStellarWallet(mnemonic);
+    const algo = WalletService.getAlgorandWallet(mnemonic);
+
+    setEthAddress(eth.address);
+    setBtcAddress(btc.address);
+    setLtcAddress(ltc.address);
+    setSolAddress(sol.address);
+    setXrpAddress(xrp.address);
+    setXlmAddress(xlm.address);
+    setAlgoAddress(algo.address);
+  };
+
+  const baseAssets = [
+    { symbol: 'BTC', name: 'Bitcoin', address: btcAddress },
+    { symbol: 'LTC', name: 'Litecoin', address: ltcAddress },
+    { symbol: 'ETH', name: 'Ethereum', address: ethAddress },
+    { symbol: 'SOL', name: 'Solana', address: solAddress },
+    { symbol: 'XRP', name: 'XRP Ledger', address: xrpAddress },
+    { symbol: 'XLM', name: 'Stellar', address: xlmAddress },
+    { symbol: 'ALGO', name: 'Algorand', address: algoAddress },
+  ].filter(
+    (asset): asset is AssetInfo =>
+      typeof asset.address === 'string' && asset.address.length > 0
+  );
+
+  const evmAssets =
+    ethAddress !== null
+      ? WalletService.getEvmNetworks(ethAddress).filter((asset) => asset.symbol !== 'ETH')
+      : [];
+
+  const allAssets: AssetInfo[] = [...baseAssets, ...evmAssets];
+
+  const syncLiveData = async () => {
+    if (allAssets.length === 0) return;
+
+    try {
+      setSyncing(true);
+
+      const requests = allAssets.map((asset) => ({
+        symbol: asset.symbol,
+        address: asset.address,
+      }));
+
+      const balanceData = await BalanceService.getBalances(requests);
+      const historyData = await TransactionService.getTransactionHistory(requests);
+
+      setBalances(balanceData);
+      setHistory(historyData);
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        'Provider Sync',
+        'Balances and transaction history refreshed'
+      );
+    } catch (error) {
+      console.error('Live data sync failed:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const copySynID = async () => {
     if (!synID) return;
@@ -142,33 +186,12 @@ export default function WalletScreen() {
   const forgeIdentity = async () => {
     try {
       const mnemonic = WalletService.createMnemonic();
+
       await VaultService.saveMnemonic(mnemonic);
 
+      hydrateWallet(mnemonic);
+
       const mnemonicArray = mnemonic.split(' ');
-
-      const ethWallet = WalletService.getEthereumWallet(mnemonic);
-      const btcWallet = WalletService.getBitcoinWallet(mnemonic);
-      const ltcWallet = WalletService.getLitecoinWallet(mnemonic);
-      const solWallet = WalletService.getSolanaWallet(mnemonic);
-      const xrpWallet = WalletService.getXrpWallet(mnemonic);
-      const xlmWallet = WalletService.getStellarWallet(mnemonic);
-const algoWallet = WalletService.getAlgorandWallet(mnemonic);
-
-      setEthAddress(ethWallet.address);
-      setBtcAddress(btcWallet.address);
-      setLtcAddress(ltcWallet.address);
-      setSolAddress(solWallet.address);
-      setXrpAddress(xrpWallet.address);
-      setXlmAddress(xlmWallet.address);
-setAlgoAddress(algoWallet.address);
-
-      if (__DEV__) {
-        console.log('ETH Address:', ethWallet.address);
-        console.log('BTC Address:', btcWallet.address);
-        console.log('LTC Address:', ltcWallet.address);
-        console.log('SOL Address:', solWallet.address);
-      }
-
       setWords(mnemonicArray);
       setPhraseVisible(false);
 
@@ -181,6 +204,7 @@ setAlgoAddress(algoWallet.address);
       const newID = `syn-${hash.substring(0, 8).toUpperCase()}`;
 
       await VaultService.saveIdentity(newID);
+
       await ActivityService.addActivity(
         'FORGE',
         'Wallet Forged',
@@ -193,23 +217,6 @@ setAlgoAddress(algoWallet.address);
       console.error('Forge Save Failed:', error);
     }
   };
-
-const myAssets = [
-  { symbol: 'ETH', name: 'Ethereum', address: ethAddress },
-  { symbol: 'BTC', name: 'Bitcoin', address: btcAddress },
-  { symbol: 'LTC', name: 'Litecoin', address: ltcAddress },
-  { symbol: 'SOL', name: 'Solana', address: solAddress },
-  { symbol: 'XRP', name: 'XRP Ledger', address: xrpAddress },
-  { symbol: 'XLM', name: 'Stellar', address: xlmAddress },
-  { symbol: 'ALGO', name: 'Algorand', address: algoAddress },
-].filter(
-  (asset): asset is AssetInfo =>
-    typeof asset.address === 'string' && asset.address.length > 0
-);
-const evmAssets =
-  ethAddress !== null
-    ? WalletService.getEvmNetworks(ethAddress).filter((asset) => asset.symbol !== 'ETH')
-    : [];
 
   if (!fontsLoaded) {
     return (
@@ -225,10 +232,9 @@ const evmAssets =
 
       <SafeAreaView>
         <View style={styles.hero}>
-          <Image source={require('../../assets/rs-graffiti.png')} style={styles.logo} />
+          <Image source={require('../../assets/rs-graffiti.png')} style={styles.logoGraffiti} />
           <Text style={styles.brand}>SHOGUN WALLET</Text>
           <Text style={styles.subtitle}>Powered by Ron1n Security Layer</Text>
-          <Text style={styles.subtitle}>Private by Default. Quantum Ready.</Text>
         </View>
 
         <Ron1nCard>
@@ -270,59 +276,44 @@ const evmAssets =
           )}
         </Ron1nCard>
 
-        <Text style={styles.sectionTitle}>QUANTUM ASSETS</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>SECURED ASSETS</Text>
 
-        {myAssets.map((asset) => (
-          <Ron1nAssetCard
-            key={asset.symbol}
-            symbol={asset.symbol}
-            name={asset.name}
-            address={asset.address}
-            accent={ASSET_ACCENTS[asset.symbol] || Ron1nColors.green}
-            onPress={async () => {
-              await ActivityService.addActivity(
-                'RECEIVE_VIEW',
-                `Viewed ${asset.symbol} Receive`,
-                'Receive QR opened'
-              );
-
-              setSelectedAsset(asset);
-              setReceiveModalVisible(true);
-            }}
-          />
-        ))}
-
-<Text style={styles.sectionTitle}>EVM NETWORKS</Text>
-
-{evmAssets.map((asset) => (
-  <Ron1nAssetCard
-    key={asset.symbol}
-    symbol={asset.symbol}
-    name={asset.name}
-    address={asset.address}
-    accent={ASSET_ACCENTS[asset.symbol] || Ron1nColors.blue}
-    onPress={async () => {
-      await ActivityService.addActivity(
-        'RECEIVE_VIEW',
-        `Viewed ${asset.symbol} Receive`,
-        `${asset.name} uses your EVM address`
-      );
-
-      setSelectedAsset(asset);
-      setReceiveModalVisible(true);
-    }}
-  />
-))}
-
-        <Text style={styles.sectionTitle}>COMING SOON</Text>
-        <View style={styles.comingGrid}>
-          {['HBAR', 'SUI', 'ADA', 'ICP', 'ZEC', 'XMR'].map((asset) => (
-            <View key={asset} style={styles.comingCard}>
-              <Text style={styles.comingAsset}>{asset}</Text>
-              <Text style={styles.comingText}>COMING SOON</Text>
-            </View>
-          ))}
+          <TouchableOpacity onPress={syncLiveData} disabled={syncing}>
+            <Text style={styles.syncText}>{syncing ? 'SYNCING...' : 'SYNC'}</Text>
+          </TouchableOpacity>
         </View>
+
+        {allAssets.map((asset) => {
+          const visual = getAssetVisual(asset.symbol);
+          const config = getAssetConfig(asset.symbol);
+          const balance = balances[asset.symbol];
+          const txs = history[asset.symbol];
+
+          return (
+            <Ron1nAssetCard
+              key={asset.symbol}
+              symbol={asset.symbol}
+              name={asset.name}
+              address={asset.address}
+              accent={visual.accent}
+              balance={balance?.confirmed}
+              balanceStatus={balance?.status}
+              transactionCount={txs?.length}
+              securityLabel={config?.securityLabel}
+              onPress={async () => {
+                await ActivityService.addActivity(
+                  'RECEIVE_VIEW',
+                  `Viewed ${asset.symbol} Receive`,
+                  'Receive QR opened'
+                );
+
+                setSelectedAsset(asset);
+                setReceiveModalVisible(true);
+              }}
+            />
+          );
+        })}
 
         <Ron1nPressable style={styles.primaryButton} onPress={forgeIdentity}>
           <Text style={styles.primaryButtonText}>
@@ -399,11 +390,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 20,
   },
-  logo: {
-    width: 118,
-    height: 118,
+  logoGraffiti: {
+    width: 132,
+    height: 132,
     resizeMode: 'contain',
-    marginBottom: 8,
+    marginBottom: 10,
+    borderRadius: 28,
   },
   brand: {
     color: Ron1nColors.gold,
@@ -483,39 +475,24 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
+  sectionHeader: {
+    marginTop: 4,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   sectionTitle: {
     color: Ron1nColors.white,
     fontSize: 15,
     fontWeight: '900',
     letterSpacing: 2,
-    marginBottom: 12,
     fontFamily: 'KatakanaStyle',
   },
-  comingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 8,
-    marginBottom: 18,
-  },
-  comingCard: {
-    width: '48%',
-    backgroundColor: 'rgba(255,255,255,0.035)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
-    borderRadius: 18,
-    padding: 14,
-  },
-  comingAsset: {
-    color: Ron1nColors.gray,
-    fontSize: 12,
+  syncText: {
+    color: Ron1nColors.blue,
+    fontSize: 11,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
-  },
-  comingText: {
-    color: Ron1nColors.muted,
-    fontSize: 9,
-    marginTop: 8,
     fontFamily: 'KatakanaStyle',
   },
   primaryButton: {
@@ -610,11 +587,4 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  logoGraffiti: {
-  width: 132,
-  height: 132,
-  resizeMode: 'contain',
-  marginBottom: 10,
-  borderRadius: 28,
-},
 });

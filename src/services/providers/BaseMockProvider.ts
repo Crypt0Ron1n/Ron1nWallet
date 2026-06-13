@@ -1,9 +1,10 @@
+import { Ron1nBalance } from '../balances/types';
+import { Ron1nTransaction } from '../transactions/types';
 import {
   AddressExposureInfo,
   ChainFamily,
   ChainProvider,
   ChainProviderStatus,
-  Ron1nTransaction,
   TransactionRequest,
 } from './types';
 
@@ -22,29 +23,23 @@ export class BaseMockProvider implements ChainProvider {
       family: this.family,
       connected: true,
       mode: 'MOCK',
-      message: `${this.chain} provider scaffold ready. RPC not connected yet.`,
+      message: `${this.chain} provider scaffold ready. Live RPC not connected yet.`,
     };
   }
 
-  async getBalance(_address: string): Promise<bigint> {
-    return BigInt(0);
+  async getBalance(address: string): Promise<Ron1nBalance> {
+    return {
+      symbol: this.chain,
+      address,
+      confirmed: '0',
+      status: 'EMPTY',
+      updatedAt: new Date().toISOString(),
+      message: 'Mock provider balance',
+    };
   }
 
-  async getTransactions(address: string): Promise<Ron1nTransaction[]> {
-    return [
-      {
-        id: `${this.chain}-${Date.now()}`,
-        chain: this.chain,
-        asset: this.chain,
-        direction: 'UNKNOWN',
-        amount: '0',
-        from: address,
-        to: address,
-        timestamp: new Date().toISOString(),
-        status: 'UNKNOWN',
-        fee: '0',
-      },
-    ];
+  async getTransactions(_address: string): Promise<Ron1nTransaction[]> {
+    return [];
   }
 
   async getAddressInfo(address: string): Promise<AddressExposureInfo> {
@@ -56,7 +51,6 @@ export class BaseMockProvider implements ChainProvider {
       outgoingTxCount: 0,
       hasSentTransactions: false,
       publicKeyExposed: false,
-      lastActivityAt: undefined,
     };
   }
 

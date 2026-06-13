@@ -1,3 +1,6 @@
+import { Ron1nBalance } from '../balances/types';
+import { Ron1nTransaction } from '../transactions/types';
+
 export type ChainFamily =
   | 'EVM'
   | 'UTXO'
@@ -6,23 +9,6 @@ export type ChainFamily =
   | 'STELLAR'
   | 'ALGORAND'
   | 'UNKNOWN';
-
-export type TransactionDirection = 'IN' | 'OUT' | 'SELF' | 'UNKNOWN';
-
-export type TransactionStatus = 'CONFIRMED' | 'PENDING' | 'FAILED' | 'UNKNOWN';
-
-export type Ron1nTransaction = {
-  id: string;
-  chain: string;
-  asset: string;
-  direction: TransactionDirection;
-  amount: string;
-  from: string;
-  to: string;
-  timestamp: string;
-  status: TransactionStatus;
-  fee?: string;
-};
 
 export type AddressExposureInfo = {
   address: string;
@@ -58,7 +44,7 @@ export interface ChainProvider {
 
   getStatus(): Promise<ChainProviderStatus>;
 
-  getBalance(address: string): Promise<bigint>;
+  getBalance(address: string): Promise<Ron1nBalance>;
 
   getTransactions(address: string): Promise<Ron1nTransaction[]>;
 
