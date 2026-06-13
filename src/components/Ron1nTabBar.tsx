@@ -22,7 +22,10 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTa
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const focused = state.index === index;
-          const [activeIcon, inactiveIcon] = ICONS[route.name] || ['ellipse', 'ellipse-outline'];
+          const [activeIcon, inactiveIcon] = ICONS[route.name] || [
+            'ellipse',
+            'ellipse-outline',
+          ];
           const icon = focused ? activeIcon : inactiveIcon;
           const label = descriptors[route.key].options.tabBarLabel ?? route.name;
 

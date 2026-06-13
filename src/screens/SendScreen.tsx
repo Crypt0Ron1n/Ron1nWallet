@@ -14,46 +14,15 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
+import { SEND_REVIEW_ASSETS, Ron1nAssetConfig } from '../config/assetCatalog';
 import { ActivityService } from '../services/ActivityService';
 import { ProviderFactory } from '../services/providers/ProviderFactory';
 import { ChainProviderStatus } from '../services/providers/types';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-type SendAsset = {
-  symbol: string;
-  name: string;
-  category: 'Native' | 'EVM' | 'Token';
-};
-
-const ASSET_META: Record<string, Omit<SendAsset, 'symbol'>> = {
-  BTC: { name: 'Bitcoin', category: 'Native' },
-  LTC: { name: 'Litecoin', category: 'Native' },
-  ETH: { name: 'Ethereum', category: 'Native' },
-  SOL: { name: 'Solana', category: 'Native' },
-  XRP: { name: 'XRP Ledger', category: 'Native' },
-  XLM: { name: 'Stellar', category: 'Native' },
-  ALGO: { name: 'Algorand', category: 'Native' },
-
-  AVAX: { name: 'Avalanche C-Chain', category: 'EVM' },
-  CRO: { name: 'Cronos', category: 'EVM' },
-  BERA: { name: 'Berachain', category: 'EVM' },
-  BASE: { name: 'Base', category: 'EVM' },
-  POL: { name: 'Polygon', category: 'EVM' },
-  ARB: { name: 'Arbitrum', category: 'EVM' },
-
-  LINK: { name: 'Chainlink', category: 'Token' },
-  USDC: { name: 'USD Coin', category: 'Token' },
-  USDG: { name: 'USDG', category: 'Token' },
-};
-
-const SEND_ASSETS: SendAsset[] = ProviderFactory.getSupportedAssets().map((symbol) => ({
-  symbol,
-  ...(ASSET_META[symbol] ?? { name: symbol, category: 'Native' as const }),
-}));
-
 export default function SendScreen() {
-  const [asset, setAsset] = useState<SendAsset>(
-    SEND_ASSETS.find((item) => item.symbol === 'ETH') ?? SEND_ASSETS[0]
+  const [asset, setAsset] = useState<Ron1nAssetConfig>(
+    SEND_REVIEW_ASSETS.find((item) => item.symbol === 'ETH') ?? SEND_REVIEW_ASSETS[0]
   );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [recipient, setRecipient] = useState('');
@@ -198,7 +167,7 @@ export default function SendScreen() {
               <Text style={styles.modalTitle}>SELECT ASSET</Text>
 
               <ScrollView showsVerticalScrollIndicator={false}>
-                {SEND_ASSETS.map((item) => (
+                {SEND_REVIEW_ASSETS.map((item) => (
                   <TouchableOpacity
                     key={item.symbol}
                     style={styles.assetOption}

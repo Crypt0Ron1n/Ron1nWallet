@@ -35,11 +35,11 @@ function recommendation(status: ExposureStatus) {
   }
 
   if (status === 'WATCHLIST') {
-    return 'Address has signed transactions. Monitor exposure and consider rotating soon.';
+    return 'Signed activity detected. Monitor exposure and consider rotation.';
   }
 
   if (status === 'EXPOSED') {
-    return 'Public key exposure detected. Address rotation is recommended.';
+    return 'Public key exposure risk detected. Address rotation is recommended.';
   }
 
   if (status === 'ROTATION_RECOMMENDED') {
@@ -47,10 +47,10 @@ function recommendation(status: ExposureStatus) {
   }
 
   if (status === 'PROTECTED') {
-    return 'Asset is marked as quantum-hardened through Ron1n address hygiene.';
+    return 'Asset is marked as protected through Ron1n address hygiene.';
   }
 
-  return 'Exposure unknown. Connect RPC scanner for live verification.';
+  return 'Exposure unknown. Live provider scanning will connect in the next phase.';
 }
 
 export class QuantumExposureService {

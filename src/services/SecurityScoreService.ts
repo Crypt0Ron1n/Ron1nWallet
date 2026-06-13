@@ -20,7 +20,7 @@ export class SecurityScoreService {
     if (input.records.length === 0) {
       score += 20;
     } else {
-      const total = input.records.reduce((sum, record) => {
+      const exposureScore = input.records.reduce((sum, record) => {
         if (record.status === 'SAFE') return sum + 20;
         if (record.status === 'PROTECTED') return sum + 25;
         if (record.status === 'WATCHLIST') return sum + 12;
@@ -29,7 +29,7 @@ export class SecurityScoreService {
         return sum + 8;
       }, 0);
 
-      score += Math.round(total / input.records.length);
+      score += Math.round(exposureScore / input.records.length);
     }
 
     return Math.max(0, Math.min(100, score));

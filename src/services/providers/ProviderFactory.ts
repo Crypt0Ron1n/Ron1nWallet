@@ -1,3 +1,4 @@
+import { RON1N_ASSETS } from '../../config/assetCatalog';
 import { ChainProvider } from './types';
 import { EvmProvider } from './EvmProvider';
 import { UtxoProvider } from './UtxoProvider';
@@ -7,35 +8,14 @@ import { StellarProvider } from './StellarProvider';
 import { AlgorandProvider } from './AlgorandProvider';
 import { BaseMockProvider } from './BaseMockProvider';
 
-export type SupportedProviderAsset =
-  | 'BTC'
-  | 'LTC'
-  | 'ETH'
-  | 'SOL'
-  | 'XRP'
-  | 'XLM'
-  | 'ALGO'
-  | 'AVAX'
-  | 'CRO'
-  | 'BERA'
-  | 'BASE'
-  | 'POL'
-  | 'ARB'
-  | 'LINK'
-  | 'USDC'
-  | 'USDG';
-
-const EVM_NETWORKS: Record<string, { chain: string; chainId: number }> = {
-  ETH: { chain: 'ETH', chainId: 1 },
-  AVAX: { chain: 'AVAX', chainId: 43114 },
-  CRO: { chain: 'CRO', chainId: 25 },
-  BERA: { chain: 'BERA', chainId: 80094 },
-  BASE: { chain: 'BASE', chainId: 8453 },
-  POL: { chain: 'POL', chainId: 137 },
-  ARB: { chain: 'ARB', chainId: 42161 },
-  LINK: { chain: 'ETH', chainId: 1 },
-  USDC: { chain: 'ETH', chainId: 1 },
-  USDG: { chain: 'ETH', chainId: 1 },
+const EVM_CHAIN_IDS: Record<string, number> = {
+  ETH: 1,
+  AVAX: 43114,
+  CRO: 25,
+  BERA: 80094,
+  BASE: 8453,
+  POL: 137,
+  ARB: 42161,
 };
 
 export class ProviderFactory {
@@ -49,36 +29,35 @@ export class ProviderFactory {
     if (normalized === 'XLM') return new StellarProvider();
     if (normalized === 'ALGO') return new AlgorandProvider();
 
-    if (EVM_NETWORKS[normalized]) {
-      const evm = EVM_NETWORKS[normalized];
-      return new EvmProvider(evm.chain, evm.chainId);
+    if (EVM_CHAIN_IDS[normalized]) {
+      return new EvmProvider(normalized, EVM_CHAIN_IDS[normalized]);
+    }
+
+    if (normalized === 'LINK' || normalized === 'USDC' || normalized === 'USDG') {
+      return new EvmProvider('ETH', 1);
     }
 
     return new BaseMockProvider(normalized, 'UNKNOWN');
   }
 
   static isEvmAsset(asset: string) {
-    return Boolean(EVM_NETWORKS[asset.toUpperCase()]);
+    const normalized = asset.toUpperCase();
+    return Boolean(EVM_CHAIN_IDS[normalized]) || ['LINK', 'USDC', 'USDG'].includes(normalized);
   }
 
-  static getSupportedAssets(): SupportedProviderAsset[] {
-    return [
-      'BTC',
-      'LTC',
-      'ETH',
-      'SOL',
-      'XRP',
-      'XLM',
-      'ALGO',
-      'AVAX',
-      'CRO',
-      'BERA',
-      'BASE',
-      'POL',
-      'ARB',
-      'LINK',
-      'USDC',
-      'USDG',
-    ];
+  static getSupportedAssets(): string[] {
+    return RON1N_ASSETS.map((asset) => asset.symbol);
+  }
+
+  static getSendReviewAssets(): string[] {
+    return RON1N_ASSETS.filter((asset) => asset.enabledInSendReview).map(
+      (asset) => asset.symbol
+    );
+  }
+
+  static getWalletAssets(): string[] {
+    return RON1N_ASSETS.filter((asset) => asset.enabledInWallet).map(
+      (asset) => asset.symbol
+    );
   }
 }

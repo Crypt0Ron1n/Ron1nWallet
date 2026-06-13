@@ -4,28 +4,32 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
+import { getAssetsByCategory } from '../config/assetCatalog';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-const NATIVE_ASSETS = ['BTC', 'LTC', 'ETH', 'SOL', 'XRP', 'XLM', 'ALGO', 'HBAR', 'SUI', 'ADA', 'ICP', 'ZEC', 'XMR'];
-const EVM_NETWORKS = ['Ethereum', 'Avalanche', 'Cronos', 'Berachain', 'Base', 'Polygon', 'Arbitrum'];
-const TOKENS = ['LINK', 'USDC', 'USDG'];
-
 export default function AssetsScreen() {
+  const nativeAssets = getAssetsByCategory('Native');
+  const evmNetworks = getAssetsByCategory('EVM');
+  const tokens = getAssetsByCategory('Token');
+  const futureAssets = getAssetsByCategory('Future');
+
   return (
     <Ron1nScreen>
       <SafeAreaView>
         <View style={styles.hero}>
           <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
           <Text style={styles.title}>ASSET LAYER</Text>
-          <Text style={styles.subtitle}>Your assets remain yours. Ron1n adds security visibility.</Text>
+          <Text style={styles.subtitle}>
+            Your assets remain yours. Ron1n adds security visibility.
+          </Text>
         </View>
 
         <Ron1nCard>
           <Text style={styles.cardTitle}>NATIVE WALLETS</Text>
           <View style={styles.grid}>
-            {NATIVE_ASSETS.map((asset) => (
-              <View key={asset} style={styles.assetPill}>
-                <Text style={styles.assetText}>{asset}</Text>
+            {nativeAssets.map((asset) => (
+              <View key={asset.symbol} style={styles.assetPill}>
+                <Text style={styles.assetText}>{asset.symbol}</Text>
               </View>
             ))}
           </View>
@@ -34,9 +38,9 @@ export default function AssetsScreen() {
         <Ron1nCard>
           <Text style={styles.cardTitle}>EVM NETWORKS</Text>
           <View style={styles.grid}>
-            {EVM_NETWORKS.map((network) => (
-              <View key={network} style={styles.networkPill}>
-                <Text style={styles.networkText}>{network}</Text>
+            {evmNetworks.map((network) => (
+              <View key={network.symbol} style={styles.networkPill}>
+                <Text style={styles.networkText}>{network.name}</Text>
               </View>
             ))}
           </View>
@@ -45,13 +49,25 @@ export default function AssetsScreen() {
         <Ron1nCard>
           <Text style={styles.cardTitle}>TOKENS</Text>
           <Text style={styles.cardText}>
-            Ron1n does not issue, wrap, custody, or synthesize user assets.
+            Token support is display/send-review architecture only. Ron1n does not
+            issue, wrap, custody, or synthesize user assets.
           </Text>
 
           <View style={styles.grid}>
-            {TOKENS.map((token) => (
-              <View key={token} style={styles.tokenPill}>
-                <Text style={styles.tokenText}>{token}</Text>
+            {tokens.map((token) => (
+              <View key={token.symbol} style={styles.tokenPill}>
+                <Text style={styles.tokenText}>{token.symbol}</Text>
+              </View>
+            ))}
+          </View>
+        </Ron1nCard>
+
+        <Ron1nCard>
+          <Text style={styles.cardTitle}>FUTURE NATIVE SUPPORT</Text>
+          <View style={styles.grid}>
+            {futureAssets.map((asset) => (
+              <View key={asset.symbol} style={styles.futurePill}>
+                <Text style={styles.futureText}>{asset.symbol}</Text>
               </View>
             ))}
           </View>
@@ -70,8 +86,17 @@ export default function AssetsScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { alignItems: 'center', marginTop: 8, marginBottom: 22 },
-  logo: { width: 118, height: 118, resizeMode: 'contain', marginBottom: 8 },
+  hero: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 22,
+  },
+  logo: {
+    width: 118,
+    height: 118,
+    resizeMode: 'contain',
+    marginBottom: 8,
+  },
   title: {
     color: Ron1nColors.gold,
     fontSize: 24,
@@ -93,8 +118,17 @@ const styles = StyleSheet.create({
     fontFamily: 'KatakanaStyle',
     marginBottom: 12,
   },
-  cardText: { color: '#AAAAAA', fontSize: 12, lineHeight: 18, marginBottom: 14 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  cardText: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
   assetPill: {
     borderWidth: 1,
     borderColor: '#00FF4155',
@@ -103,7 +137,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  assetText: { color: Ron1nColors.green, fontSize: 10, fontWeight: '900', fontFamily: 'KatakanaStyle' },
+  assetText: {
+    color: Ron1nColors.green,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
   networkPill: {
     borderWidth: 1,
     borderColor: '#00D4FF55',
@@ -112,7 +151,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  networkText: { color: Ron1nColors.blue, fontSize: 10, fontWeight: '900', fontFamily: 'KatakanaStyle' },
+  networkText: {
+    color: Ron1nColors.blue,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
   tokenPill: {
     borderWidth: 1,
     borderColor: '#B026FF55',
@@ -121,7 +165,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  tokenText: { color: Ron1nColors.purple, fontSize: 10, fontWeight: '900', fontFamily: 'KatakanaStyle' },
+  tokenText: {
+    color: Ron1nColors.purple,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  futurePill: {
+    borderWidth: 1,
+    borderColor: '#FFD70055',
+    backgroundColor: '#FFD70012',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  futureText: {
+    color: Ron1nColors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
   green: { color: Ron1nColors.green, marginTop: 8, fontSize: 12 },
   blue: { color: Ron1nColors.blue, marginTop: 8, fontSize: 12 },
   purple: { color: Ron1nColors.purple, marginTop: 8, fontSize: 12 },
