@@ -226,7 +226,8 @@ const evmAssets =
       <SafeAreaView>
         <View style={styles.hero}>
           <Image source={require('../../assets/rs-graffiti.png')} style={styles.logo} />
-          <Text style={styles.brand}>RON1N WALLET</Text>
+          <Text style={styles.brand}>SHOGUN WALLET</Text>
+          <Text style={styles.subtitle}>Powered by Ron1n Security Layer</Text>
           <Text style={styles.subtitle}>Private by Default. Quantum Ready.</Text>
         </View>
 
