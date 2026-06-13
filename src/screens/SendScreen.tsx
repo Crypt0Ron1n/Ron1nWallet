@@ -16,10 +16,36 @@ import Ron1nCard from '../components/Ron1nCard';
 import { ActivityService } from '../services/ActivityService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-const ASSETS = ['ETH', 'BTC', 'LTC', 'SOL'];
+type SendAsset = {
+  symbol: string;
+  name: string;
+  category: 'Native' | 'EVM' | 'Token';
+};
+
+const SEND_ASSETS: SendAsset[] = [
+  { symbol: 'BTC', name: 'Bitcoin', category: 'Native' },
+  { symbol: 'LTC', name: 'Litecoin', category: 'Native' },
+  { symbol: 'ETH', name: 'Ethereum', category: 'Native' },
+  { symbol: 'SOL', name: 'Solana', category: 'Native' },
+  { symbol: 'XRP', name: 'XRP Ledger', category: 'Native' },
+  { symbol: 'XLM', name: 'Stellar', category: 'Native' },
+  { symbol: 'ALGO', name: 'Algorand', category: 'Native' },
+
+  { symbol: 'AVAX', name: 'Avalanche C-Chain', category: 'EVM' },
+  { symbol: 'CRO', name: 'Cronos', category: 'EVM' },
+  { symbol: 'BERA', name: 'Berachain', category: 'EVM' },
+  { symbol: 'BASE', name: 'Base', category: 'EVM' },
+  { symbol: 'POL', name: 'Polygon', category: 'EVM' },
+  { symbol: 'ARB', name: 'Arbitrum', category: 'EVM' },
+
+  { symbol: 'LINK', name: 'Chainlink', category: 'Token' },
+  { symbol: 'USDC', name: 'USD Coin', category: 'Token' },
+  { symbol: 'USDG', name: 'USDG', category: 'Token' },
+];
 
 export default function SendScreen() {
-  const [asset, setAsset] = useState('ETH');
+  const [asset, setAsset] = useState<SendAsset>(SEND_ASSETS[2]);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -34,7 +60,7 @@ export default function SendScreen() {
     await ActivityService.addActivity(
       'SEND_REVIEW',
       'Send Review Opened',
-      `${amount} ${asset} to ${recipient.slice(0, 10)}...`
+      `${amount} ${asset.symbol} to ${recipient.slice(0, 10)}...`
     );
 
     setReviewOpen(true);
@@ -55,7 +81,7 @@ export default function SendScreen() {
       await ActivityService.addActivity(
         'SEND_BLOCKED',
         'Send Blocked',
-        `${asset} biometric confirmation failed`
+        `${asset.symbol} biometric confirmation failed`
       );
       Alert.alert('Blocked', 'Biometric confirmation failed.');
       return;
@@ -64,36 +90,37 @@ export default function SendScreen() {
     await ActivityService.addActivity(
       'SEND_BLOCKED',
       'Send Not Broadcast Yet',
-      `${amount} ${asset} reviewed. Broadcast engine not connected.`
+      `${amount} ${asset.symbol} reviewed. Broadcast engine not connected.`
     );
 
     setReviewOpen(false);
     setAcknowledged(false);
 
-    Alert.alert('Send Engine Not Live Yet', 'Review flow is ready. Broadcast engine comes next.');
+    Alert.alert(
+      'Broadcast Not Live Yet',
+      'Ron1n review flow is active. Real network broadcasting will connect in a later build.'
+    );
   };
 
   return (
     <Ron1nScreen>
       <SafeAreaView>
         <Text style={styles.title}>SEND ASSET</Text>
-        <Text style={styles.subtitle}>External transfers are public-chain actions.</Text>
+        <Text style={styles.subtitle}>
+          Review-only flow. Ron1n does not custody, wrap, or convert assets.
+        </Text>
 
         <Ron1nCard>
-          <Text style={styles.label}>ASSET</Text>
-          <View style={styles.assetRow}>
-            {ASSETS.map((item) => (
-              <TouchableOpacity
-                key={item}
-                style={[styles.assetPill, asset === item && styles.assetPillActive]}
-                onPress={() => setAsset(item)}
-              >
-                <Text style={[styles.assetPillText, asset === item && styles.assetPillTextActive]}>
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.label}>SELECT ASSET</Text>
+
+          <TouchableOpacity style={styles.selectorButton} onPress={() => setSelectorOpen(true)}>
+            <View>
+              <Text style={styles.selectorSymbol}>{asset.symbol}</Text>
+              <Text style={styles.selectorName}>{asset.name}</Text>
+            </View>
+
+            <Text style={styles.selectorCategory}>{asset.category}</Text>
+          </TouchableOpacity>
 
           <Text style={styles.label}>RECIPIENT</Text>
           <TextInput
@@ -126,19 +153,51 @@ export default function SendScreen() {
         </Ron1nCard>
 
         <View style={styles.warningCard}>
-          <Text style={styles.warningTitle}>PUBLIC CHAIN WARNING</Text>
+          <Text style={styles.warningTitle}>SECURITY LAYER NOTICE</Text>
           <Text style={styles.warningText}>
-            Sending outside Ron1n moves the asset to the destination network security model.
-            External transactions may be visible on public explorers.
+            Ron1n helps protect keys, monitor exposure, and prepare assets for future
+            quantum migration. External chain transfers still follow the destination
+            network’s rules and visibility.
           </Text>
         </View>
+
+        <Modal visible={selectorOpen} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>SELECT ASSET</Text>
+
+              {SEND_ASSETS.map((item) => (
+                <TouchableOpacity
+                  key={item.symbol}
+                  style={styles.assetOption}
+                  onPress={() => {
+                    setAsset(item);
+                    setSelectorOpen(false);
+                  }}
+                >
+                  <View>
+                    <Text style={styles.optionSymbol}>{item.symbol}</Text>
+                    <Text style={styles.optionName}>{item.name}</Text>
+                  </View>
+
+                  <Text style={styles.optionCategory}>{item.category}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setSelectorOpen(false)}>
+                <Text style={styles.cancelButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         <Modal visible={reviewOpen} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>REVIEW TRANSACTION</Text>
 
-              <Text style={styles.reviewLine}>Asset: {asset}</Text>
+              <Text style={styles.reviewLine}>Asset: {asset.symbol}</Text>
+              <Text style={styles.reviewLine}>Network: {asset.name}</Text>
               <Text style={styles.reviewLine}>Amount: {amount}</Text>
               <Text style={styles.reviewAddress}>To: {recipient}</Text>
 
@@ -148,7 +207,8 @@ export default function SendScreen() {
               >
                 <Text style={styles.checkText}>
                   {acknowledged ? '✓ ' : ''}
-                  I understand this external transfer may be public and outside Ron1n protection.
+                  I understand external transfers may be public and outside Ron1n’s
+                  security-layer protections.
                 </Text>
               </TouchableOpacity>
 
@@ -191,25 +251,32 @@ const styles = StyleSheet.create({
     marginTop: 14,
     fontFamily: 'KatakanaStyle',
   },
-  assetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  assetPill: {
+  selectorButton: {
     borderWidth: 1,
-    borderColor: '#333',
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    borderColor: '#00D4FF55',
+    backgroundColor: '#00D4FF10',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  assetPillActive: {
-    borderColor: Ron1nColors.green,
-    backgroundColor: '#00FF4122',
-  },
-  assetPillText: {
-    color: Ron1nColors.gray,
-    fontSize: 11,
+  selectorSymbol: {
+    color: Ron1nColors.blue,
+    fontSize: 18,
+    fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  assetPillTextActive: {
+  selectorName: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 5,
+  },
+  selectorCategory: {
     color: Ron1nColors.green,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
   },
   input: {
     borderWidth: 1,
@@ -228,7 +295,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#222',
   },
-  feeLabel: { color: Ron1nColors.gray, fontSize: 9, fontFamily: 'KatakanaStyle' },
+  feeLabel: {
+    color: Ron1nColors.gray,
+    fontSize: 9,
+    fontFamily: 'KatakanaStyle',
+  },
   feeValue: {
     color: Ron1nColors.green,
     fontSize: 11,
@@ -251,13 +322,13 @@ const styles = StyleSheet.create({
   warningCard: {
     marginTop: 4,
     borderWidth: 1,
-    borderColor: Ron1nColors.red,
-    backgroundColor: '#22000A',
+    borderColor: Ron1nColors.gold,
+    backgroundColor: '#1A1300',
     borderRadius: 18,
     padding: 16,
   },
   warningTitle: {
-    color: Ron1nColors.red,
+    color: Ron1nColors.gold,
     fontSize: 11,
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
@@ -274,6 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalCard: {
+    maxHeight: '84%',
     backgroundColor: '#0A0A0A',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -284,6 +356,32 @@ const styles = StyleSheet.create({
   modalTitle: {
     color: Ron1nColors.white,
     fontSize: 18,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+    marginBottom: 12,
+  },
+  assetOption: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+    paddingVertical: 13,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionSymbol: {
+    color: Ron1nColors.green,
+    fontSize: 14,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  optionName: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  optionCategory: {
+    color: Ron1nColors.blue,
+    fontSize: 9,
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
@@ -325,6 +423,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  cancelButton: { padding: 15, alignItems: 'center' },
-  cancelButtonText: { color: Ron1nColors.gray, fontFamily: 'KatakanaStyle' },
+  cancelButton: {
+    padding: 15,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: Ron1nColors.gray,
+    fontFamily: 'KatakanaStyle',
+  },
 });

@@ -4,8 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import WalletScreen from './src/screens/WalletScreen';
 import SendScreen from './src/screens/SendScreen';
-import RFTsScreen from './src/screens/RFTsScreen';
-import MarketplaceScreen from './src/screens/MarketplaceScreen';
+import AssetsScreen from './src/screens/AssetsScreen';
 import SecurityScreen from './src/screens/SecurityScreen';
 import Ron1nTabBar from './src/components/Ron1nTabBar';
 import { Ron1nColors } from './src/theme/ron1nTheme';
@@ -36,8 +35,7 @@ export default function App() {
       >
         <Tab.Screen name="Wallet" component={WalletScreen} />
         <Tab.Screen name="Send" component={SendScreen} />
-        <Tab.Screen name="RFTs" component={RFTsScreen} />
-        <Tab.Screen name="Market" component={MarketplaceScreen} />
+        <Tab.Screen name="Assets" component={AssetsScreen} />
         <Tab.Screen name="Security" component={SecurityScreen} />
       </Tab.Navigator>
     </NavigationContainer>

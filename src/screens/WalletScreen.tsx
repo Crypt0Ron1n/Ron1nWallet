@@ -225,7 +225,7 @@ const evmAssets =
 
       <SafeAreaView>
         <View style={styles.hero}>
-          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
+          <Image source={require('../../assets/rs-graffiti.png')} style={styles.logo} />
           <Text style={styles.brand}>RON1N WALLET</Text>
           <Text style={styles.subtitle}>Private by Default. Quantum Ready.</Text>
         </View>
@@ -609,4 +609,11 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
+  logoGraffiti: {
+  width: 132,
+  height: 132,
+  resizeMode: 'contain',
+  marginBottom: 10,
+  borderRadius: 28,
+},
 });

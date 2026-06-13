@@ -2,14 +2,17 @@ import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+
 import Ron1nPressable from './Ron1nPressable';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-const ICONS: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+const ICONS: Record<
+  string,
+  [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]
+> = {
   Wallet: ['wallet', 'wallet-outline'],
   Send: ['paper-plane', 'paper-plane-outline'],
-  RFTs: ['cube', 'cube-outline'],
-  Market: ['swap-horizontal', 'swap-horizontal-outline'],
+  Assets: ['layers', 'layers-outline'],
   Security: ['shield-checkmark', 'shield-checkmark-outline'],
 };
 
@@ -82,7 +85,7 @@ const styles = StyleSheet.create({
   item: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 62,
+    width: 74,
     height: 58,
     borderRadius: 20,
   },
