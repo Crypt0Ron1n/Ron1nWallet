@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, StatusBar, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
+
+// Component imports - verified paths
 import FlickerButton from '../components/FlickerButton';
 import { Ron1nColors, Ron1nGradients } from '../theme/ron1nTheme';
 
-// Import your existing transaction services
+// Service imports - verified paths
 import { ActivityService } from '../services/transactions/ActivityService'; 
 import { PrivateActivityService } from '../services/PrivateActivityService';
 
@@ -25,12 +27,8 @@ export default function WalletScreen() {
     if (result.success) {
       setIsSyncing(true);
       try {
-        // Fetch new activities using your existing service
         const newActivities = await ActivityService.fetchChainActivity();
-        
-        // Save to local encrypted storage
         await PrivateActivityService.saveActivity(newActivities);
-        
         Alert.alert('Sync Complete', 'Local activity ledger updated.');
       } catch (error) {
         Alert.alert('Sync Error', 'Failed to update ledger.');
