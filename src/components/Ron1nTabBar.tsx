@@ -14,6 +14,7 @@ const ICONS: Record<
   Send: ['paper-plane', 'paper-plane-outline'],
   Assets: ['layers', 'layers-outline'],
   Security: ['shield-checkmark', 'shield-checkmark-outline'],
+  Disclosures: ['document-text', 'document-text-outline'],
 };
 
 export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -48,7 +49,7 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTa
               <View style={[styles.iconHalo, focused && styles.iconHaloActive]}>
                 <Ionicons
                   name={icon}
-                  size={21}
+                  size={20}
                   color={focused ? Ron1nColors.green : '#777'}
                 />
               </View>
@@ -67,12 +68,12 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTa
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
-    left: 14,
-    right: 14,
+    left: 10,
+    right: 10,
     bottom: Platform.OS === 'ios' ? 24 : 12,
   },
   bar: {
-    height: 72,
+    height: 74,
     borderRadius: 26,
     backgroundColor: 'rgba(5,5,5,0.96)',
     borderWidth: 1,
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   item: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 74,
+    width: 64,
     height: 58,
     borderRadius: 20,
   },
@@ -98,8 +99,8 @@ const styles = StyleSheet.create({
     borderColor: '#00FF4133',
   },
   iconHalo: {
-    width: 34,
-    height: 30,
+    width: 31,
+    height: 29,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 3,
     color: '#777',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '900',
   },
   labelActive: {

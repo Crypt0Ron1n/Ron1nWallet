@@ -6,6 +6,7 @@ import WalletScreen from './src/screens/WalletScreen';
 import SendScreen from './src/screens/SendScreen';
 import AssetsScreen from './src/screens/AssetsScreen';
 import SecurityScreen from './src/screens/SecurityScreen';
+import DisclosuresScreen from './src/screens/DisclosuresScreen';
 import Ron1nTabBar from './src/components/Ron1nTabBar';
 import { Ron1nColors } from './src/theme/ron1nTheme';
 
@@ -37,6 +38,7 @@ export default function App() {
         <Tab.Screen name="Send" component={SendScreen} />
         <Tab.Screen name="Assets" component={AssetsScreen} />
         <Tab.Screen name="Security" component={SecurityScreen} />
+        <Tab.Screen name="Disclosures" component={DisclosuresScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
