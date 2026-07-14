@@ -13,7 +13,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
-import { ActivityService, Ron1nActivity } from '../services/ActivityService';
+import { ActivityService, Ron1nActivity } from '../services/transactions/ActivityService';
 import {
   ExposureStatus,
   QuantumExposureRecord,
