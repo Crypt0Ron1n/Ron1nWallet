@@ -15,7 +15,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
 import { SEND_REVIEW_ASSETS, Ron1nAssetConfig } from '../config/assetCatalog';
-import { ActivityService } from '../services/ActivityService';
+import { ActivityService } from '../services/transactions/ActivityService';
 import { FeeQuoteService } from '../services/fees/FeeQuoteService';
 import { FeeQuote, SendMode } from '../services/fees/types';
 import { ProviderFactory } from '../services/providers/ProviderFactory';
