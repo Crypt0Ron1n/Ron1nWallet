@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as LocalAuthentication from 'expo-local-authentication';
 
+import ManualSyncConsentModal from '../components/ManualSyncConsentModal';
 import ReceiveModal, { type AssetInfo } from '../components/ReceiveModal';
 import Ron1nAssetCard from '../components/Ron1nAssetCard';
 import Ron1nCard from '../components/Ron1nCard';
@@ -23,9 +24,9 @@ import { BalanceService } from '../services/balances/BalanceService';
 import { Ron1nBalance } from '../services/balances/types';
 import { TransactionService } from '../services/transactions/TransactionService';
 import { Ron1nTransaction } from '../services/transactions/types';
+import { ActivityService } from '../services/transactions/ActivityService';
 import { VaultService } from '../services/VaultService';
 import { WalletService } from '../services/WalletService';
-import { ActivityService } from '../services/transactions/ActivityService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
 type WalletAsset = {
@@ -36,6 +37,7 @@ type WalletAsset = {
 
 export default function WalletScreen() {
   const [privacyMode, setPrivacyMode] = useState(true);
+  const [syncConsentVisible, setSyncConsentVisible] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [assets, setAssets] = useState<WalletAsset[]>([]);
   const [balances, setBalances] = useState<Record<string, Ron1nBalance>>({});
@@ -98,6 +100,23 @@ export default function WalletScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const requestManualSync = () => {
+    if (privacyMode) {
+      Alert.alert(
+        'Privacy Mode Active',
+        'Disable Privacy Mode before syncing public-chain balances or activity.'
+      );
+      return;
+    }
+
+    if (assets.length === 0) {
+      Alert.alert('No Assets', 'Create or restore a vault before syncing.');
+      return;
+    }
+
+    setSyncConsentVisible(true);
   };
 
   const handleManualSync = async () => {
@@ -231,7 +250,7 @@ export default function WalletScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={handleManualSync}
+              onPress={requestManualSync}
               disabled={privacyMode || isSyncing || assets.length === 0}
               style={[
                 styles.actionButton,
@@ -279,6 +298,15 @@ export default function WalletScreen() {
             </View>
           )}
         </ScrollView>
+
+        <ManualSyncConsentModal
+          visible={syncConsentVisible}
+          onCancel={() => setSyncConsentVisible(false)}
+          onConfirm={() => {
+            setSyncConsentVisible(false);
+            handleManualSync();
+          }}
+        />
 
         <ReceiveModal
           visible={receiveModalVisible}

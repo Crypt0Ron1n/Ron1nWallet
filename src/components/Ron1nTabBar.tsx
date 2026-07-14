@@ -1,35 +1,102 @@
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Ron1nPressable from './Ron1nPressable';
+
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-const ICONS: Record<string, [any, any]> = {
-  Wallet: ['wallet', 'wallet-outline'],
-  Send: ['paper-plane', 'paper-plane-outline'],
-  Assets: ['layers', 'layers-outline'],
-  Security: ['shield-checkmark', 'shield-checkmark-outline'],
-  Disclosures: ['document-text', 'document-text-outline'],
+type Props = {
+  state: any;
+  descriptors: any;
+  navigation: any;
 };
 
-export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+const iconMap: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+  Wallet: {
+    active: 'wallet',
+    inactive: 'wallet-outline',
+  },
+  Send: {
+    active: 'paper-plane',
+    inactive: 'paper-plane-outline',
+  },
+  Assets: {
+    active: 'layers',
+    inactive: 'layers-outline',
+  },
+  Security: {
+    active: 'shield-checkmark',
+    inactive: 'shield-checkmark-outline',
+  },
+  Activity: {
+    active: 'pulse',
+    inactive: 'pulse-outline',
+  },
+  Settings: {
+    active: 'settings',
+    inactive: 'settings-outline',
+  },
+  Disclosures: {
+    active: 'document-text',
+    inactive: 'document-text-outline',
+  },
+};
+
+export default function Ron1nTabBar({ state, descriptors, navigation }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.bar}>
-        {state.routes.map((route, index) => {
+        {state.routes.map((route: any, index: number) => {
           const focused = state.index === index;
-          const [activeIcon, inactiveIcon] = ICONS[route.name] || ['ellipse', 'ellipse-outline'];
-          const icon = focused ? activeIcon : inactiveIcon;
-          const label = descriptors[route.key].options.tabBarLabel ?? route.name;
+          const options = descriptors[route.key]?.options || {};
+          const label = options.tabBarLabel || options.title || route.name;
+          const icons = iconMap[route.name] || {
+            active: 'ellipse',
+            inactive: 'ellipse-outline',
+          };
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!focused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
 
           return (
-            <Ron1nPressable key={route.key} style={[styles.item, focused && styles.itemActive]} onPress={() => navigation.navigate(route.name)}>
-              <View style={[styles.iconHalo, focused && styles.iconHaloActive]}>
-                <Ionicons name={icon} size={20} color={focused ? Ron1nColors.green : '#777'} />
-              </View>
-              <Text style={[styles.label, focused && styles.labelActive]}>{String(label).toUpperCase()}</Text>
-            </Ron1nPressable>
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              onPress={onPress}
+              style={styles.item}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={focused ? icons.active : icons.inactive}
+                size={20}
+                color={focused ? Ron1nColors.green : '#777777'}
+              />
+
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.label,
+                  { color: focused ? Ron1nColors.green : '#777777' },
+                ]}
+              >
+                {String(label).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -38,12 +105,33 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: BottomTa
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: 'absolute', left: 10, right: 10, bottom: Platform.OS === 'ios' ? 24 : 12 },
-  bar: { height: 74, borderRadius: 26, backgroundColor: 'rgba(5,5,5,0.96)', borderWidth: 1, borderColor: '#8C00FF66', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', shadowColor: Ron1nColors.purple, shadowRadius: 20, elevation: 18 },
-  item: { alignItems: 'center', justifyContent: 'center', width: 64, height: 58, borderRadius: 20 },
-  itemActive: { backgroundColor: '#00FF4112', borderWidth: 1, borderColor: '#00FF4133' },
-  iconHalo: { width: 31, height: 29, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  iconHaloActive: { backgroundColor: '#00FF4120' },
-  label: { marginTop: 3, color: '#777', fontSize: 7, fontWeight: '900' },
-  labelActive: { color: Ron1nColors.white }
+  wrap: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    bottom: Platform.OS === 'ios' ? 22 : 10,
+  },
+  bar: {
+    minHeight: 76,
+    borderRadius: 24,
+    backgroundColor: '#050505F2',
+    borderWidth: 1,
+    borderColor: '#1F1F1F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  label: {
+    fontSize: 6.5,
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
 });
