@@ -8,7 +8,7 @@ import FlickerButton from '../components/FlickerButton';
 import { Ron1nColors, Ron1nGradients } from '../theme/ron1nTheme';
 
 // Service imports - verified paths
-import { ActivityService } from '../services/transactions/ActivityService'; 
+import { ActivityService } from './services/transactions/ActivityService';
 import { PrivateActivityService } from '../services/PrivateActivityService';
 
 export default function WalletScreen() {
