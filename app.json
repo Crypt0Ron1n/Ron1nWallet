@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Ron1nWallet",
+    "name": "Ron1n Syndicate",
     "slug": "ron1nwallet",
+    "scheme": "ron1nwallet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,10 +14,14 @@
       "backgroundColor": "#000000"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ron1nsyndicate.wallet",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Ron1n Syndicate uses Face ID to protect wallet actions, recovery access, and security confirmations."
+      }
     },
     "android": {
-      "package": "com.anonymous.ron1nwallet",
+      "package": "com.ron1nsyndicate.wallet",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#000000"
@@ -29,12 +34,21 @@
     "plugins": [
       "expo-secure-store",
       "expo-font",
+      "expo-local-authentication",
       [
         "expo-asset",
         {
-          "assets": ["./assets/icon.png"]
+          "assets": [
+            "./assets/icon.png",
+            "./assets/rs-gold.png",
+            "./assets/rs-graffiti.png"
+          ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "appBrand": "Ron1n Syndicate",
+      "walletUiTitle": "SHOGUN WALLET"
+    }
   }
 }
