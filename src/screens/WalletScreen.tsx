@@ -3,12 +3,12 @@ import { StyleSheet, Text, View, StatusBar, TouchableOpacity, Alert } from 'reac
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
 
-// Component imports - verified paths
+// Component imports
 import FlickerButton from '../components/FlickerButton';
 import { Ron1nColors, Ron1nGradients } from '../theme/ron1nTheme';
 
-// Service imports - verified paths
-import { ActivityService } from './services/transactions/ActivityService';
+// Service imports
+import { ActivityService } from '../services/transactions/ActivityService';
 import { PrivateActivityService } from '../services/PrivateActivityService';
 
 export default function WalletScreen() {

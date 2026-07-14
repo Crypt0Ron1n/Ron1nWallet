@@ -8,7 +8,8 @@ export type Ron1nActivityType =
   | 'RECOVERY_VIEW'
   | 'SEND_REVIEW'
   | 'SEND_BLOCKED'
-  | 'SECURITY';
+  | 'SECURITY'
+  | 'SYNC'; // Added SYNC type
 
 export type Ron1nActivity = {
   id: string;
@@ -21,6 +22,18 @@ export type Ron1nActivity = {
 const ACTIVITY_KEY = 'ron1n_activity_v1';
 
 export class ActivityService {
+  // NEW: Added this method to resolve the error in WalletScreen.tsx
+  static async fetchChainActivity(): Promise<Ron1nActivity[]> {
+    try {
+      // Mocking a chain fetch; replace with your actual API/RPC call
+      console.log('Fetching chain activity...');
+      return []; 
+    } catch (error) {
+      console.error('Failed to fetch chain activity:', error);
+      throw error;
+    }
+  }
+
   static async addActivity(
     type: Ron1nActivityType,
     title: string,
