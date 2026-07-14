@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Image,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -43,10 +43,6 @@ export default function WalletScreen() {
   const [selectedAsset, setSelectedAsset] = useState<AssetInfo | null>(null);
   const [receiveModalVisible, setReceiveModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const logActivity = async (_type: string, _title: string, _description: string) => {
-    return Promise.resolve();
-  };
 
   useEffect(() => {
     loadWalletAssets();
@@ -191,93 +187,98 @@ export default function WalletScreen() {
       <StatusBar barStyle="light-content" />
 
       <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <Image source={require('../../assets/rs-graffiti.png')} style={styles.logo} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.header}>
+            <Image source={require('../../assets/rs-graffiti.png')} style={styles.logo} />
 
-          <Text style={styles.brand}>SHOGUN WALLET</Text>
-          <Text style={styles.subtitle}>RON1N SECURITY LAYER</Text>
-        </View>
+            <Text style={styles.brand}>SHOGUN WALLET</Text>
+            <Text style={styles.subtitle}>RON1N SECURITY LAYER</Text>
+          </View>
 
-        <Ron1nCard>
-          <Text style={styles.label}>VAULT STATUS</Text>
-
-          <Text
-            style={[
-              styles.statusText,
-              { color: privacyMode ? Ron1nColors.green : Ron1nColors.gold },
-            ]}
-          >
-            {privacyMode ? 'PRIVACY MODE ACTIVE' : 'MANUAL SYNC ENABLED'}
-          </Text>
-
-          <Text style={styles.statusBody}>
-            {privacyMode
-              ? 'Public-chain data is not fetched automatically.'
-              : 'Manual sync can fetch balances and public-chain activity.'}
-          </Text>
-        </Ron1nCard>
-
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            onPress={() => setPrivacyMode(!privacyMode)}
-            style={[styles.actionButton, privacyMode ? styles.syncButton : styles.privateButton]}
-          >
-            <Text style={styles.actionButtonText}>
-              {privacyMode ? 'ENABLE MANUAL SYNC' : 'ENTER PRIVATE MODE'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleManualSync}
-            disabled={privacyMode || isSyncing || assets.length === 0}
-            style={[
-              styles.actionButton,
-              privacyMode || isSyncing || assets.length === 0
-                ? styles.disabledButton
-                : styles.syncButton,
-            ]}
-          >
-            <Text style={styles.actionButtonText}>
-              {isSyncing ? 'SYNCING...' : 'SYNC'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {assets.length === 0 ? (
           <Ron1nCard>
-            <Text style={styles.emptyTitle}>NO VAULT FOUND</Text>
-            <Text style={styles.emptyText}>
-              Create or restore a vault before syncing assets.
+            <Text style={styles.label}>VAULT STATUS</Text>
+
+            <Text
+              style={[
+                styles.statusText,
+                { color: privacyMode ? Ron1nColors.green : Ron1nColors.gold },
+              ]}
+            >
+              {privacyMode ? 'PRIVACY MODE ACTIVE' : 'MANUAL SYNC ENABLED'}
+            </Text>
+
+            <Text style={styles.statusBody}>
+              {privacyMode
+                ? 'Public-chain data is not fetched automatically.'
+                : 'Manual sync can fetch balances and public-chain activity.'}
             </Text>
           </Ron1nCard>
-        ) : (
-          <FlatList
-            data={assets}
-            keyExtractor={(item) => item.symbol}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => {
-              const visual = getAssetVisual(item.symbol);
-              const config = getAssetConfig(item.symbol);
-              const balance = balances[item.symbol];
-              const transactions = history[item.symbol];
 
-              return (
-                <Ron1nAssetCard
-                  symbol={item.symbol}
-                  name={item.name}
-                  address={item.address}
-                  accent={visual.accent}
-                  balance={balance?.confirmed}
-                  balanceStatus={balance?.status}
-                  transactionCount={transactions?.length}
-                  securityLabel={config?.securityLabel}
-                  onPress={() => openReceive(item)}
-                />
-              );
-            }}
-          />
-        )}
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              onPress={() => setPrivacyMode(!privacyMode)}
+              style={[
+                styles.actionButton,
+                privacyMode ? styles.syncButton : styles.privateButton,
+              ]}
+            >
+              <Text style={styles.actionButtonText}>
+                {privacyMode ? 'ENABLE MANUAL SYNC' : 'ENTER PRIVATE MODE'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleManualSync}
+              disabled={privacyMode || isSyncing || assets.length === 0}
+              style={[
+                styles.actionButton,
+                privacyMode || isSyncing || assets.length === 0
+                  ? styles.disabledButton
+                  : styles.syncButton,
+              ]}
+            >
+              <Text style={styles.actionButtonText}>
+                {isSyncing ? 'SYNCING...' : 'SYNC'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {assets.length === 0 ? (
+            <Ron1nCard>
+              <Text style={styles.emptyTitle}>NO VAULT FOUND</Text>
+              <Text style={styles.emptyText}>
+                Create or restore a vault before syncing assets.
+              </Text>
+            </Ron1nCard>
+          ) : (
+            <View style={styles.assetList}>
+              {assets.map((item) => {
+                const visual = getAssetVisual(item.symbol);
+                const config = getAssetConfig(item.symbol);
+                const balance = balances[item.symbol];
+                const transactions = history[item.symbol];
+
+                return (
+                  <Ron1nAssetCard
+                    key={item.symbol}
+                    symbol={item.symbol}
+                    name={item.name}
+                    address={item.address}
+                    accent={visual.accent}
+                    balance={balance?.confirmed}
+                    balanceStatus={balance?.status}
+                    transactionCount={transactions?.length}
+                    securityLabel={config?.securityLabel}
+                    onPress={() => openReceive(item)}
+                  />
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
 
         <ReceiveModal
           visible={receiveModalVisible}
@@ -292,6 +293,9 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120,
   },
   loading: {
     flex: 1,
@@ -382,8 +386,8 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  listContent: {
-    paddingBottom: 120,
+  assetList: {
+    paddingBottom: 12,
   },
   emptyTitle: {
     color: Ron1nColors.gold,
