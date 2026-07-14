@@ -5,18 +5,34 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native generated folders
+/ios/
+/android/
+
+# Kotlin / native temp
 .kotlin/
 *.orig.*
+
+# Signing / secrets
 *.jks
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
+
+# SSH keys
+Crypt0Ron1n
+Crypt0Ron1n.pub
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
 
 # Metro
 .metro-health-check*
@@ -28,20 +44,17 @@ yarn-error.*
 
 # macOS
 .DS_Store
-*.pem
 
 # local env files
+.env
+.env.*
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
-
-# SSH keys
-Crypt0Ron1n
-Crypt0Ron1n.pub
-*.pem
-*.key
+# Local audit files
+ron1n-file-audit.txt
+ron1n-file-audit-detailed.txt
+ron1n-src-audit.txt
+project_files.txt
