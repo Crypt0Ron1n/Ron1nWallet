@@ -2,65 +2,97 @@ import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import * as LocalAuthentication from 'expo-local-authentication';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
-import { ActivityService, Ron1nActivity } from '../services/transactions/ActivityService';
+import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
 import {
-  ExposureStatus,
-  QuantumExposureRecord,
-  QuantumExposureService,
-} from '../services/QuantumExposureService';
-import { SecurityScoreService } from '../services/SecurityScoreService';
-import { AddressRotationService } from '../services/AddressRotationService';
-import { AssetSecurityService } from '../services/AssetSecurityService';
-import { ProviderHealthService } from '../services/ProviderHealthService';
-import { ChainProviderStatus } from '../services/providers/types';
+  ChainActivityCacheService,
+  type CachedChainActivity,
+} from '../services/transactions/ChainActivityCacheService';
+import {
+  ExposureScannerService,
+  type AssetExposureReport,
+  type ExposureLevel,
+  type PortfolioExposureReport,
+} from '../services/security/ExposureScannerService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
-const DEMO_ASSETS = [
-  { symbol: 'BTC', address: 'Current BTC address' },
-  { symbol: 'ETH', address: 'Current ETH address' },
-  { symbol: 'LTC', address: 'Current LTC address' },
-  { symbol: 'SOL', address: 'Current SOL address' },
-  { symbol: 'XRP', address: 'Current XRP address' },
-  { symbol: 'XLM', address: 'Current XLM address' },
-  { symbol: 'ALGO', address: 'Current ALGO address' },
-];
+function calculateSecurityScore(report: PortfolioExposureReport | null): number {
+  if (!report || report.totalAssetsScanned === 0) {
+    return 82;
+  }
+
+  let score = 96;
+
+  report.reports.forEach((item) => {
+    if (item.exposureLevel === 'ELEVATED') {
+      score -= 10;
+    }
+
+    if (item.exposureLevel === 'UNKNOWN') {
+      score -= 6;
+    }
+
+    if (item.exposureLevel === 'LOW') {
+      score -= 3;
+    }
+  });
+
+  if (report.failedAssets > 0) {
+    score -= report.failedAssets * 2;
+  }
+
+  return Math.max(35, Math.min(99, score));
+}
+
+function scoreLabel(score: number) {
+  if (score >= 90) return 'STRONG';
+  if (score >= 75) return 'WATCHFUL';
+  if (score >= 60) return 'ROTATION ADVISED';
+  return 'ELEVATED RISK';
+}
+
+function exposureColor(level: ExposureLevel) {
+  if (level === 'FRESH') return Ron1nColors.green;
+  if (level === 'LOW') return Ron1nColors.gold;
+  if (level === 'ELEVATED') return Ron1nColors.red;
+  return Ron1nColors.gray;
+}
+
+function exposureStatusText(level: ExposureLevel) {
+  if (level === 'FRESH') return 'FRESH';
+  if (level === 'LOW') return 'LOW EXPOSURE';
+  if (level === 'ELEVATED') return 'ROTATION RECOMMENDED';
+  return 'UNKNOWN';
+}
 
 export default function SecurityScreen() {
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
-  const [exposure, setExposure] = useState<QuantumExposureRecord[]>([]);
-  const [providerStatuses, setProviderStatuses] = useState<ChainProviderStatus[]>([]);
-  const [score, setScore] = useState(92);
+  const [chainCache, setChainCache] = useState<Record<string, CachedChainActivity>>({});
+  const [portfolioReport, setPortfolioReport] = useState<PortfolioExposureReport | null>(null);
+  const [score, setScore] = useState(82);
 
   const load = async () => {
     try {
-      const activityData = await ActivityService.getActivities();
-      const exposureData = await QuantumExposureService.getAllExposure();
-      const providerData = await ProviderHealthService.getAllStatuses();
+      const [activityData, cacheData] = await Promise.all([
+        ActivityService.getActivities(),
+        ChainActivityCacheService.getCache(),
+      ]);
+
+      const report = ExposureScannerService.scanPortfolio(cacheData);
 
       setActivities(activityData);
-      setExposure(exposureData);
-      setProviderStatuses(providerData);
-
-      setScore(
-        SecurityScoreService.calculate({
-          biometricsEnabled: true,
-          vaultProtected: true,
-          mnemonicBackedUp: true,
-          records: exposureData,
-          recentRotation: exposureData.some((item) => item.status === 'PROTECTED'),
-        })
-      );
+      setChainCache(cacheData);
+      setPortfolioReport(report);
+      setScore(calculateSecurityScore(report));
     } catch (error) {
       console.error('Security screen load failed:', error);
       Alert.alert('Security Load Error', 'Unable to refresh Ron1n security data.');
@@ -73,95 +105,68 @@ export default function SecurityScreen() {
     }, [])
   );
 
-  const runScan = async () => {
+  const runExposureScan = async () => {
     try {
-      for (const asset of DEMO_ASSETS) {
-        await QuantumExposureService.scanAsset(asset.symbol, asset.address);
-        await AssetSecurityService.setState(asset.symbol, 'QUANTUM_READY');
+      const cache = await ChainActivityCacheService.getCache();
+      const cacheCount = Object.keys(cache).length;
+
+      if (cacheCount === 0) {
+        Alert.alert(
+          'Manual Sync Required',
+          'Go to Wallet, enable Manual Sync, and sync public-chain activity before running exposure analysis.'
+        );
+        return;
       }
+
+      const report = ExposureScannerService.scanPortfolio(cache);
+
+      setChainCache(cache);
+      setPortfolioReport(report);
+      setScore(calculateSecurityScore(report));
 
       await ActivityService.addActivity(
         'SECURITY',
-        'Quantum Exposure Scan',
-        'Address exposure model refreshed'
+        'Exposure Scan Complete',
+        `${report.totalAssetsScanned} assets scanned. ${report.activeAssets} active assets detected.`
+      );
+
+      Alert.alert(
+        'Exposure Scan Complete',
+        `${report.totalAssetsScanned} assets scanned. Overall status: ${exposureStatusText(
+          report.overallLevel
+        )}.`
       );
 
       await load();
     } catch (error) {
       console.error('Exposure scan failed:', error);
+
+      await ActivityService.addActivity(
+        'ERROR',
+        'Exposure Scan Failed',
+        'Unable to complete cached chain exposure scan'
+      );
+
       Alert.alert('Scan Failed', 'Unable to complete exposure scan.');
     }
   };
 
-  const simulateExposure = async () => {
-    try {
-      await QuantumExposureService.simulateActivity('ETH', 'Current ETH address', 8);
-      await AssetSecurityService.setState('ETH', 'ROTATION_RECOMMENDED');
+  const latestSyncTime = portfolioReport?.reports
+    ?.map((item) => item.lastSyncedAt)
+    .filter(Boolean)
+    .sort()
+    .reverse()[0];
 
-      await ActivityService.addActivity(
-        'SECURITY',
-        'ETH Exposure Simulated',
-        'ETH address marked as exposed for testing'
-      );
-
-      await load();
-    } catch (error) {
-      console.error('Exposure simulation failed:', error);
-      Alert.alert('Simulation Failed', 'Unable to simulate exposure.');
-    }
-  };
-
-  const quantumHarden = async (record: QuantumExposureRecord) => {
-    try {
-      const rotation = await AddressRotationService.prepareRotation(
-        record.symbol,
-        record.address
-      );
-
-      await QuantumExposureService.markProtected(record.symbol, record.address);
-      await AssetSecurityService.setState(record.symbol, 'PROTECTED');
-
-      await ActivityService.addActivity(
-        'SECURITY',
-        `${record.symbol} Quantum Hardened`,
-        `${rotation.newAddressLabel} prepared`
-      );
-
-      await load();
-
-      Alert.alert(
-        'Quantum Hardened',
-        `${record.symbol} is now marked as protected. Live migration broadcast connects later.`
-      );
-    } catch (error) {
-      console.error('Quantum harden failed:', error);
-      Alert.alert('Harden Failed', `Unable to harden ${record.symbol}.`);
-    }
-  };
-
-  const clearHistory = async () => {
-    const auth = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Clear Ron1n Activity',
-      fallbackLabel: 'Use device passcode',
-    });
-
-    if (!auth.success) return;
-
-    await ActivityService.clearActivities();
-    await load();
-
-    Alert.alert('Cleared', 'Private activity history cleared.');
-  };
+  const exposureReports = portfolioReport?.reports || [];
+  const hasCache = Object.keys(chainCache).length > 0;
 
   return (
     <Ron1nScreen>
-      <SafeAreaView>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
           <Text style={styles.title}>SECURITY LAYER</Text>
-          <Text style={styles.subtitle}>
-            Not another token. A quantum readiness platform.
-          </Text>
+          <Text style={styles.subtitle}>EXPOSURE + ADDRESS HYGIENE</Text>
         </View>
 
         <Ron1nCard>
@@ -172,116 +177,109 @@ export default function SecurityScreen() {
             <Text style={styles.scoreOutOf}>/100</Text>
           </View>
 
-          <Text style={styles.scoreStatus}>{SecurityScoreService.label(score)}</Text>
+          <Text style={styles.scoreStatus}>{scoreLabel(score)}</Text>
+
+          <Text style={styles.scoreDetail}>
+            This score is based on local vault posture and cached public-chain exposure
+            data from user-approved manual syncs.
+          </Text>
         </Ron1nCard>
 
         <View style={styles.grid}>
           <StatusTile title="VAULT" status="SECURED" color={Ron1nColors.green} />
           <StatusTile title="BIOMETRICS" status="ACTIVE" color={Ron1nColors.green} />
-          <StatusTile title="EXPOSURE" status="SCANNER" color={Ron1nColors.blue} />
-          <StatusTile title="ML-KEM" status="NEXT" color={Ron1nColors.gold} />
+          <StatusTile
+            title="EXPOSURE"
+            status={portfolioReport ? exposureStatusText(portfolioReport.overallLevel) : 'NO SCAN'}
+            color={portfolioReport ? exposureColor(portfolioReport.overallLevel) : Ron1nColors.gray}
+          />
+          <StatusTile title="PQ VAULT" status="ROADMAP" color={Ron1nColors.gold} />
         </View>
 
         <Ron1nCard>
-          <Text style={styles.cardTitle}>PROVIDER INFRASTRUCTURE</Text>
+          <Text style={styles.cardTitle}>EXPOSURE SCANNER</Text>
+
           <Text style={styles.cardText}>
-            ProviderFactory is installed. Live RPC connections, balances, history,
-            and real exposure analysis plug into this layer next.
+            Ron1n reviews cached public-chain history to estimate address exposure.
+            It does not claim assets are quantum-proof, and it does not move funds.
           </Text>
 
-          {providerStatuses.length === 0 ? (
-            <Text style={styles.emptyProvider}>No provider statuses loaded.</Text>
+          {latestSyncTime ? (
+            <Text style={styles.syncText}>
+              Last cached sync: {new Date(latestSyncTime).toLocaleString()}
+            </Text>
           ) : (
-            providerStatuses.slice(0, 12).map((provider, index) => (
-              <View
-                key={`${provider.chain}-${provider.family}-${index}`}
-                style={styles.providerRow}
-              >
-                <Text style={styles.providerChain}>{provider.chain}</Text>
-                <Text style={styles.providerMode}>
-                  {provider.family} / {provider.mode}
-                </Text>
+            <Text style={styles.syncText}>
+              No cached sync yet. Run Manual Sync from Wallet first.
+            </Text>
+          )}
+
+          <TouchableOpacity style={styles.primaryButton} onPress={runExposureScan}>
+            <Text style={styles.primaryButtonText}>RUN EXPOSURE SCAN</Text>
+          </TouchableOpacity>
+        </Ron1nCard>
+
+        <Ron1nCard>
+          <Text style={styles.cardTitle}>PORTFOLIO READINESS</Text>
+
+          {!portfolioReport || !hasCache ? (
+            <Text style={styles.cardText}>
+              No chain activity cache found. Open Wallet, enable Manual Sync, approve
+              the privacy notice, then return here to scan exposure.
+            </Text>
+          ) : (
+            <>
+              <View style={styles.metricRow}>
+                <Metric label="SCANNED" value={String(portfolioReport.totalAssetsScanned)} />
+                <Metric label="ACTIVE" value={String(portfolioReport.activeAssets)} />
+                <Metric label="FAILED" value={String(portfolioReport.failedAssets)} />
               </View>
-            ))
+
+              <Text style={styles.cardText}>
+                Overall exposure level: {exposureStatusText(portfolioReport.overallLevel)}.
+              </Text>
+            </>
           )}
         </Ron1nCard>
+
+        {exposureReports.length > 0 ? (
+          exposureReports.map((item) => <ExposureCard key={item.symbol} report={item} />)
+        ) : (
+          <Ron1nCard>
+            <Text style={styles.cardTitle}>NO ASSET EXPOSURE REPORTS</Text>
+            <Text style={styles.cardText}>
+              Exposure reports will appear here after Wallet Manual Sync and Run Exposure Scan.
+            </Text>
+          </Ron1nCard>
+        )}
 
         <Ron1nCard>
           <Text style={styles.cardTitle}>RON1N IS A SECURITY LAYER</Text>
           <Text style={styles.cardText}>
-            Your assets remain BTC, ETH, XRP, SOL and the networks you already use.
-            Ron1n provides exposure analysis, address hygiene, security scoring,
-            and quantum migration readiness.
+            Your assets remain BTC, ETH, XRP, SOL, and the networks you already use.
+            Ron1n provides exposure analysis, address hygiene, security scoring, and
+            quantum migration readiness.
           </Text>
-
-          <TouchableOpacity style={styles.primaryButton} onPress={runScan}>
-            <Text style={styles.primaryButtonText}>RUN EXPOSURE SCAN</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryButton} onPress={simulateExposure}>
-            <Text style={styles.secondaryButtonText}>
-              DEMO: SIMULATE ETH EXPOSURE
-            </Text>
-          </TouchableOpacity>
         </Ron1nCard>
 
-        {exposure.map((item) => (
-          <Ron1nCard key={item.symbol}>
-            <View style={styles.exposureHeader}>
-              <Text style={styles.assetTitle}>{item.symbol}</Text>
-              <Text style={[styles.exposureBadge, { color: exposureColor(item.status) }]}>
-                {item.status}
-              </Text>
-            </View>
-
-            <Text style={styles.cardText}>
-              Public key exposed: {item.publicKeyExposed ? 'YES' : 'NO'}
-            </Text>
-            <Text style={styles.cardText}>
-              Sent transactions: {item.hasSentTransactions ? 'YES' : 'NO'}
-            </Text>
-            <Text style={styles.cardText}>Transaction count: {item.txCount}</Text>
-            <Text style={styles.cardText}>Recommendation: {item.recommendation}</Text>
-
-            {(item.status === 'EXPOSED' ||
-              item.status === 'WATCHLIST' ||
-              item.status === 'ROTATION_RECOMMENDED') && (
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={() => quantumHarden(item)}
-              >
-                <Text style={styles.primaryButtonText}>QUANTUM HARDEN ADDRESS</Text>
-              </TouchableOpacity>
-            )}
-
-            {item.status === 'PROTECTED' && (
-              <Text style={styles.protectedText}>PROTECTED ADDRESS STATE</Text>
-            )}
-          </Ron1nCard>
-        ))}
-
         <Ron1nCard>
-          <Text style={styles.cardTitle}>POST-QUANTUM VAULT</Text>
+          <Text style={styles.cardTitle}>POST-QUANTUM VAULT ROADMAP</Text>
           <Text style={styles.cardText}>
-            ML-KEM vault wrapping is next. Until then, Ron1n protects keys with
-            SecureStore, biometric access, exposure visibility, and address rotation
-            architecture.
+            Native post-quantum vault wrapping is a roadmap layer. Current protection
+            uses SecureStore, biometric access, recovery phrase controls, exposure
+            visibility, and address rotation guidance.
           </Text>
           <Text style={styles.pending}>STATUS: NATIVE BRIDGE REQUIRED</Text>
         </Ron1nCard>
 
         <View style={styles.historyHeader}>
-          <Text style={styles.sectionTitle}>PRIVATE ACTIVITY</Text>
-
-          <TouchableOpacity onPress={clearHistory}>
-            <Text style={styles.clearText}>CLEAR</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>RECENT PRIVATE ACTIVITY</Text>
         </View>
 
         {activities.length === 0 ? (
           <Text style={styles.empty}>No private activity yet.</Text>
         ) : (
-          activities.map((item) => (
+          activities.slice(0, 8).map((item) => (
             <View key={item.id} style={styles.activityRow}>
               <Text style={styles.activityTitle}>{item.title}</Text>
               <Text style={styles.activityDetail}>{item.detail}</Text>
@@ -291,18 +289,52 @@ export default function SecurityScreen() {
             </View>
           ))
         )}
-      </SafeAreaView>
+      </ScrollView>
     </Ron1nScreen>
   );
 }
 
-function exposureColor(status: ExposureStatus) {
-  if (status === 'SAFE') return Ron1nColors.green;
-  if (status === 'PROTECTED') return Ron1nColors.gold;
-  if (status === 'WATCHLIST') return Ron1nColors.blue;
-  if (status === 'EXPOSED') return Ron1nColors.red;
-  if (status === 'ROTATION_RECOMMENDED') return Ron1nColors.red;
-  return Ron1nColors.gray;
+function ExposureCard({ report }: { report: AssetExposureReport }) {
+  const color = exposureColor(report.exposureLevel);
+
+  return (
+    <Ron1nCard>
+      <View style={styles.exposureHeader}>
+        <View>
+          <Text style={styles.assetTitle}>{report.symbol}</Text>
+          {report.lastSyncedAt ? (
+            <Text style={styles.activityTime}>
+              Synced: {new Date(report.lastSyncedAt).toLocaleString()}
+            </Text>
+          ) : null}
+        </View>
+
+        <Text style={[styles.exposureBadge, { color }]}>
+          {exposureStatusText(report.exposureLevel)}
+        </Text>
+      </View>
+
+      <Text style={styles.cardText}>{report.headline}</Text>
+      <Text style={styles.cardText}>{report.detail}</Text>
+
+      <View style={styles.exposureMetaRow}>
+        <Text style={styles.metaPill}>TX: {report.transactionCount}</Text>
+        <Text style={styles.metaPill}>PROVIDER: {report.providerStatus}</Text>
+      </View>
+
+      <Text style={styles.recommendationTitle}>RECOMMENDATION</Text>
+      <Text style={styles.recommendation}>{report.recommendation}</Text>
+    </Ron1nCard>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metricBox}>
+      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricLabel}>{label}</Text>
+    </View>
+  );
 }
 
 function StatusTile({
@@ -323,6 +355,9 @@ function StatusTile({
 }
 
 const styles = StyleSheet.create({
+  content: {
+    paddingBottom: 120,
+  },
   hero: {
     alignItems: 'center',
     marginTop: 8,
@@ -340,6 +375,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 3,
     fontFamily: 'KatakanaStyle',
+    textAlign: 'center',
   },
   subtitle: {
     color: Ron1nColors.gray,
@@ -347,6 +383,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontFamily: 'KatakanaStyle',
     textAlign: 'center',
+    letterSpacing: 2,
   },
   scoreLabel: {
     color: Ron1nColors.gray,
@@ -376,6 +413,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     fontFamily: 'KatakanaStyle',
+    letterSpacing: 2,
+  },
+  scoreDetail: {
+    color: '#888888',
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginTop: 12,
   },
   grid: {
     flexDirection: 'row',
@@ -406,6 +451,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
+    letterSpacing: 1,
   },
   cardText: {
     color: '#AAAAAA',
@@ -413,35 +459,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 18,
   },
-  providerRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-    paddingBottom: 8,
-  },
-  providerChain: {
-    color: Ron1nColors.green,
-    fontSize: 11,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
-  },
-  providerMode: {
-    color: Ron1nColors.gray,
-    fontSize: 10,
-    fontFamily: 'KatakanaStyle',
-  },
-  emptyProvider: {
-    color: Ron1nColors.gray,
-    fontSize: 11,
-    marginTop: 12,
-  },
-  pending: {
+  syncText: {
     color: Ron1nColors.gold,
     fontSize: 11,
     marginTop: 14,
-    fontFamily: 'KatakanaStyle',
+    lineHeight: 17,
   },
   primaryButton: {
     marginTop: 16,
@@ -456,24 +478,36 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
   },
-  secondaryButton: {
-    marginTop: 10,
-    borderColor: Ron1nColors.purple,
+  metricRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  metricBox: {
+    flex: 1,
+    borderRadius: 14,
     borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 12,
+    borderColor: '#00FF4133',
+    backgroundColor: '#00FF4110',
+    padding: 12,
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    color: Ron1nColors.purple,
-    fontSize: 10,
+  metricValue: {
+    color: Ron1nColors.green,
+    fontSize: 18,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
+  },
+  metricLabel: {
+    color: '#999999',
+    fontSize: 9,
+    marginTop: 4,
+    fontWeight: '900',
   },
   exposureHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 12,
+    alignItems: 'flex-start',
   },
   assetTitle: {
     color: Ron1nColors.white,
@@ -482,31 +516,55 @@ const styles = StyleSheet.create({
     fontFamily: 'KatakanaStyle',
   },
   exposureBadge: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
     fontFamily: 'KatakanaStyle',
+    textAlign: 'right',
+    maxWidth: 145,
   },
-  protectedText: {
+  exposureMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  metaPill: {
+    color: Ron1nColors.green,
+    fontSize: 10,
+    fontWeight: '900',
+    borderWidth: 1,
+    borderColor: '#00FF4144',
+    backgroundColor: '#00FF4110',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  recommendationTitle: {
     color: Ron1nColors.gold,
-    marginTop: 16,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginTop: 14,
+  },
+  recommendation: {
+    color: '#CCCCCC',
     fontSize: 12,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+  pending: {
+    color: Ron1nColors.gold,
+    fontSize: 11,
+    marginTop: 14,
     fontFamily: 'KatakanaStyle',
   },
   historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginTop: 10,
-    alignItems: 'center',
   },
   sectionTitle: {
     color: Ron1nColors.white,
     fontSize: 14,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
-  },
-  clearText: {
-    color: Ron1nColors.red,
-    fontSize: 11,
     fontFamily: 'KatakanaStyle',
   },
   empty: {
