@@ -1,4 +1,3 @@
-import * as Updates from 'expo-updates';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as Updates from 'expo-updates';
 
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
@@ -47,26 +47,14 @@ export default function SettingsScreen() {
     }
   };
 
-  const togglePrivacy = async (value: boolean) => {
-    try {
-      await PrivacyModeService.setEnabled(value);
-      setPrivacyMode(value);
-
-      await ActivityService.addActivity(
-        'SECURITY',
-        value ? 'Privacy Mode Enabled' : 'Privacy Mode Disabled',
-        'User updated Privacy Mode setting'
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Unable to update Privacy Mode.');
-    }
-  };
-
   const authenticate = async (promptMessage: string) => {
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
 
     if (!hasHardware) {
-      Alert.alert('Authentication Unavailable', 'Biometric support is not available on this device.');
+      Alert.alert(
+        'Authentication Unavailable',
+        'Biometric support is not available on this device.'
+      );
       return false;
     }
 
@@ -81,6 +69,21 @@ export default function SettingsScreen() {
     }
 
     return true;
+  };
+
+  const togglePrivacy = async (value: boolean) => {
+    try {
+      await PrivacyModeService.setEnabled(value);
+      setPrivacyMode(value);
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        value ? 'Privacy Mode Enabled' : 'Privacy Mode Disabled',
+        'User updated Privacy Mode setting'
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Unable to update Privacy Mode.');
+    }
   };
 
   const openRecoveryBackup = async () => {
@@ -159,6 +162,19 @@ export default function SettingsScreen() {
     );
   };
 
+  const restartApp = async () => {
+    try {
+      await Updates.reloadAsync();
+    } catch (error) {
+      console.error('Reload failed:', error);
+
+      Alert.alert(
+        'Restart Required',
+        'Local vault data was removed. Close and reopen the app to return to onboarding.'
+      );
+    }
+  };
+
   const deleteLocalVault = async () => {
     const ok = await authenticate('Authenticate to Delete Local Vault');
 
@@ -177,30 +193,25 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               await VaultService.clearVault();
-await ActivityService.clearActivities();
+              await ActivityService.clearActivities();
 
-setHasVault(false);
-setRecoveryPhrase('');
-setPhraseVisible(false);
-setMode('settings');
+              setHasVault(false);
+              setRecoveryPhrase('');
+              setPhraseVisible(false);
+              setMode('settings');
 
-Alert.alert(
-  'Vault Deleted',
-  'Local vault data was removed. The app will restart to return to onboarding.',
-  [
-    {
-      text: 'Restart',
-      onPress: async () => {
-        try {
-          await Updates.reloadAsync();
-        } catch (error) {
-          console.error('Reload failed:', error);
-        }
-      },
-    },
-  ]
-);
+              Alert.alert(
+                'Vault Deleted',
+                'Local vault data was removed. The app will restart to return to onboarding.',
+                [
+                  {
+                    text: 'Restart',
+                    onPress: restartApp,
+                  },
+                ]
+              );
             } catch (error) {
+              console.error('Delete local vault failed:', error);
               Alert.alert('Error', 'Unable to delete local vault.');
             }
           },

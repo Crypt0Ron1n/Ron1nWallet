@@ -20,9 +20,15 @@ import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
 import { getAssetConfig } from '../config/assetCatalog';
 import { getAssetVisual } from '../config/assetVisuals';
-import { BalanceService } from '../services/balances/BalanceService';
+import {
+  BalanceService,
+  type BalanceSyncResult,
+} from '../services/balances/BalanceService';
 import { Ron1nBalance } from '../services/balances/types';
-import { TransactionService } from '../services/transactions/TransactionService';
+import {
+  TransactionService,
+  type TransactionSyncResult,
+} from '../services/transactions/TransactionService';
 import { Ron1nTransaction } from '../services/transactions/types';
 import { ActivityService } from '../services/transactions/ActivityService';
 import { VaultService } from '../services/VaultService';
@@ -35,6 +41,12 @@ type WalletAsset = {
   address: string;
 };
 
+type SyncIssue = {
+  symbol: string;
+  type: 'BALANCE' | 'HISTORY';
+  message: string;
+};
+
 export default function WalletScreen() {
   const [privacyMode, setPrivacyMode] = useState(true);
   const [syncConsentVisible, setSyncConsentVisible] = useState(false);
@@ -45,6 +57,8 @@ export default function WalletScreen() {
   const [selectedAsset, setSelectedAsset] = useState<AssetInfo | null>(null);
   const [receiveModalVisible, setReceiveModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [syncIssues, setSyncIssues] = useState<SyncIssue[]>([]);
 
   useEffect(() => {
     loadWalletAssets();
@@ -147,27 +161,80 @@ export default function WalletScreen() {
 
     try {
       setIsSyncing(true);
+      setSyncIssues([]);
 
       const requests = assets.map((asset) => ({
         symbol: asset.symbol,
         address: asset.address,
       }));
 
-      const balanceData = await BalanceService.getBalances(requests);
-      const historyData = await TransactionService.getTransactionHistory(requests);
+      const balanceResults = await BalanceService.getBalancesDetailed(requests);
+      const historyResults = await TransactionService.getTransactionHistoryDetailed(requests);
 
-      setBalances(balanceData);
-      setHistory(historyData);
+      const nextBalances: Record<string, Ron1nBalance> = {};
+      const nextHistory: Record<string, Ron1nTransaction[]> = {};
+      const nextIssues: SyncIssue[] = [];
+
+      Object.entries(balanceResults).forEach(([symbol, result]: [string, BalanceSyncResult]) => {
+        if (result.status === 'OK' && result.balance) {
+          nextBalances[symbol] = result.balance;
+        } else {
+          nextIssues.push({
+            symbol,
+            type: 'BALANCE',
+            message: result.error || 'Balance sync failed',
+          });
+        }
+      });
+
+      Object.entries(historyResults).forEach(
+        ([symbol, result]: [string, TransactionSyncResult]) => {
+          if (result.status === 'OK') {
+            nextHistory[symbol] = result.transactions;
+          } else {
+            nextIssues.push({
+              symbol,
+              type: 'HISTORY',
+              message: result.error || 'History sync failed',
+            });
+          }
+        }
+      );
+
+      setBalances(nextBalances);
+      setHistory(nextHistory);
+      setSyncIssues(nextIssues);
+      setLastSyncedAt(new Date().toISOString());
+
+      const failedSymbols = new Set(nextIssues.map((issue) => issue.symbol));
+      const failedCount = failedSymbols.size;
+      const okCount = requests.length - failedCount;
+
+      await ActivityService.addActivity(
+        failedCount > 0 ? 'SECURITY' : 'SYNC',
+        failedCount > 0 ? 'Manual Sync Partially Completed' : 'Manual Sync Complete',
+        failedCount > 0
+          ? `${okCount} assets synced. ${failedCount} assets had provider issues.`
+          : 'User-approved public-chain balance and activity sync completed'
+      );
+
+      if (failedCount > 0) {
+        Alert.alert(
+          'Partial Sync Complete',
+          `${okCount} assets synced. ${failedCount} assets had provider issues.`
+        );
+      } else {
+        Alert.alert('Sync Complete', 'Balances and chain activity were refreshed.');
+      }
+    } catch (error) {
+      console.error('Manual sync failed:', error);
 
       await ActivityService.addActivity(
         'SECURITY',
-        'Manual Sync Complete',
-        'User-approved public-chain balance and activity sync completed'
+        'Manual Sync Failed',
+        'Unexpected sync failure during user-approved public-chain refresh'
       );
 
-      Alert.alert('Sync Complete', 'Balances and chain activity were refreshed.');
-    } catch (error) {
-      console.error('Manual sync failed:', error);
       Alert.alert('Sync Error', 'Failed to sync balances or chain activity.');
     } finally {
       setIsSyncing(false);
@@ -188,6 +255,45 @@ export default function WalletScreen() {
     });
 
     setReceiveModalVisible(true);
+  };
+
+  const renderSyncStatus = () => {
+    if (!lastSyncedAt && syncIssues.length === 0) {
+      return null;
+    }
+
+    return (
+      <Ron1nCard>
+        <Text style={styles.label}>SYNC STATUS</Text>
+
+        {lastSyncedAt ? (
+          <Text style={styles.statusBody}>
+            Last synced: {new Date(lastSyncedAt).toLocaleString()}
+          </Text>
+        ) : null}
+
+        {syncIssues.length === 0 ? (
+          <Text style={styles.syncGood}>ALL PROVIDERS OK</Text>
+        ) : (
+          <View style={styles.issueList}>
+            {syncIssues.slice(0, 8).map((issue, index) => (
+              <View key={`${issue.symbol}-${issue.type}-${index}`} style={styles.issueRow}>
+                <Text style={styles.issueSymbol}>{issue.symbol}</Text>
+                <Text style={styles.issueText}>
+                  {issue.type}: {issue.message}
+                </Text>
+              </View>
+            ))}
+
+            {syncIssues.length > 8 ? (
+              <Text style={styles.moreIssues}>
+                +{syncIssues.length - 8} more provider issues
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </Ron1nCard>
+    );
   };
 
   if (loading) {
@@ -264,6 +370,8 @@ export default function WalletScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {renderSyncStatus()}
 
           {assets.length === 0 ? (
             <Ron1nCard>
@@ -428,5 +536,40 @@ const styles = StyleSheet.create({
     color: '#CCCCCC',
     fontSize: 12,
     lineHeight: 18,
+  },
+  syncGood: {
+    color: Ron1nColors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginTop: 10,
+  },
+  issueList: {
+    marginTop: 12,
+    gap: 8,
+  },
+  issueRow: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FF777744',
+    backgroundColor: '#FF4D4D12',
+    padding: 10,
+  },
+  issueSymbol: {
+    color: '#FF9999',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  issueText: {
+    color: '#DDDDDD',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  moreIssues: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    marginTop: 4,
   },
 });
