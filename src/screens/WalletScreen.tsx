@@ -29,6 +29,7 @@ import {
   TransactionService,
   type TransactionSyncResult,
 } from '../services/transactions/TransactionService';
+import { ChainActivityCacheService } from '../services/transactions/ChainActivityCacheService';
 import { Ron1nTransaction } from '../services/transactions/types';
 import { ActivityService } from '../services/transactions/ActivityService';
 import { VaultService } from '../services/VaultService';
@@ -174,18 +175,36 @@ export default function WalletScreen() {
       const nextBalances: Record<string, Ron1nBalance> = {};
       const nextHistory: Record<string, Ron1nTransaction[]> = {};
       const nextIssues: SyncIssue[] = [];
+      const chainCacheRecords: Record<string, any> = {};
 
-      Object.entries(balanceResults).forEach(([symbol, result]: [string, BalanceSyncResult]) => {
-        if (result.status === 'OK' && result.balance) {
-          nextBalances[symbol] = result.balance;
-        } else {
-          nextIssues.push({
-            symbol,
-            type: 'BALANCE',
-            message: result.error || 'Balance sync failed',
-          });
-        }
+      Object.entries(historyResults).forEach(
+  ([symbol, result]: [string, TransactionSyncResult]) => {
+    if (result.status === 'OK') {
+      nextHistory[symbol] = result.transactions;
+
+      chainCacheRecords[symbol] = {
+        symbol,
+        transactions: result.transactions,
+        syncedAt: new Date().toISOString(),
+        status: 'OK',
+      };
+    } else {
+      nextIssues.push({
+        symbol,
+        type: 'HISTORY',
+        message: result.error || 'History sync failed',
       });
+
+      chainCacheRecords[symbol] = {
+        symbol,
+        transactions: [],
+        syncedAt: new Date().toISOString(),
+        status: 'FAILED',
+        error: result.error || 'History sync failed',
+      };
+    }
+  }
+);
 
       Object.entries(historyResults).forEach(
         ([symbol, result]: [string, TransactionSyncResult]) => {
@@ -205,6 +224,7 @@ export default function WalletScreen() {
       setHistory(nextHistory);
       setSyncIssues(nextIssues);
       setLastSyncedAt(new Date().toISOString());
+      await ChainActivityCacheService.mergeCache(chainCacheRecords);
 
       const failedSymbols = new Set(nextIssues.map((issue) => issue.symbol));
       const failedCount = failedSymbols.size;
