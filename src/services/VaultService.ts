@@ -1,45 +1,78 @@
 import * as SecureStore from 'expo-secure-store';
 
-export class VaultService {
-  private static KEY = 'syn_id_v1';
-  private static MNEMONIC_KEY = 'ron1n_mnemonic_v1';
-  static async saveMnemonic(mnemonic: string) {
-  await SecureStore.setItemAsync(this.MNEMONIC_KEY, mnemonic, {
-    keychainService: 'ron1n',
-  });
-}
-static async getMnemonic() {
-  try {
-    return await SecureStore.getItemAsync(this.MNEMONIC_KEY, {
-      requireAuthentication: true,
-      authenticationPrompt: 'Unlock Ron1n Vault',
-      keychainService: 'ron1n',
+const MNEMONIC_KEY = 'ron1n_master_mnemonic';
+const LEGACY_MNEMONIC_KEY = 'user_mnemonic';
+const SYN_ID_KEY = 'ron1n_syn_id';
+const LEGACY_SYN_ID_KEY = 'syn_id';
+
+export const VaultService = {
+  async saveMnemonic(mnemonic: string): Promise<void> {
+    const cleanMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    await SecureStore.setItemAsync(MNEMONIC_KEY, cleanMnemonic, {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
-  } catch (e) {
-    console.error('Mnemonic Retrieval Error:', e);
-    return null;
-  }
-}
 
-  static async saveIdentity(id: string) {
-    await SecureStore.setItemAsync(this.KEY, id, {
-      keychainService: 'ron1n',
-      requireAuthentication: true
+    // Keep legacy key in sync for older screens/services that may still check it.
+    await SecureStore.setItemAsync(LEGACY_MNEMONIC_KEY, cleanMnemonic, {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
-  }
+  },
 
-  static async getIdentity() {
-    try {
-      const result = await SecureStore.getItemAsync(this.KEY, {
-        keychainService: 'ron1n',
-        requireAuthentication: true,
-        authenticationPrompt: 'Unlock Ron1n Vault'
-      });
+  async getMnemonic(): Promise<string | null> {
+    const current = await SecureStore.getItemAsync(MNEMONIC_KEY);
 
-      return result;
-    } catch (e) {
-      console.error('Vault Retrieval Error:', e);
-      return null;
+    if (current) {
+      return current;
     }
-  }
-}
+
+    const legacy = await SecureStore.getItemAsync(LEGACY_MNEMONIC_KEY);
+
+    if (legacy) {
+      // Migrate legacy vault key forward.
+      await this.saveMnemonic(legacy);
+      return legacy;
+    }
+
+    return null;
+  },
+
+  async hasVault(): Promise<boolean> {
+    const mnemonic = await this.getMnemonic();
+    return Boolean(mnemonic);
+  },
+
+  async saveSynId(synId: string): Promise<void> {
+    await SecureStore.setItemAsync(SYN_ID_KEY, synId);
+    await SecureStore.setItemAsync(LEGACY_SYN_ID_KEY, synId);
+  },
+
+  async getSynId(): Promise<string | null> {
+    const current = await SecureStore.getItemAsync(SYN_ID_KEY);
+
+    if (current) {
+      return current;
+    }
+
+    return SecureStore.getItemAsync(LEGACY_SYN_ID_KEY);
+  },
+
+  async clearVault(): Promise<void> {
+    const keys = [
+      MNEMONIC_KEY,
+      LEGACY_MNEMONIC_KEY,
+      SYN_ID_KEY,
+      LEGACY_SYN_ID_KEY,
+    ];
+
+    await Promise.all(
+      keys.map(async (key) => {
+        try {
+          await SecureStore.deleteItemAsync(key);
+        } catch (error) {
+          console.warn(`Failed to delete SecureStore key: ${key}`, error);
+        }
+      })
+    );
+  },
+};

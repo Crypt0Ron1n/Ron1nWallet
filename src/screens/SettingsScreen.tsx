@@ -1,3 +1,4 @@
+import * as Updates from 'expo-updates';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -10,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
@@ -20,9 +20,14 @@ import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import { VaultService } from '../services/VaultService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
+type SettingsMode = 'settings' | 'recovery';
+
 export default function SettingsScreen() {
+  const [mode, setMode] = useState<SettingsMode>('settings');
   const [privacyMode, setPrivacyMode] = useState(true);
   const [hasVault, setHasVault] = useState(false);
+  const [recoveryPhrase, setRecoveryPhrase] = useState('');
+  const [phraseVisible, setPhraseVisible] = useState(false);
 
   useEffect(() => {
     load();
@@ -36,79 +41,10 @@ export default function SettingsScreen() {
       setPrivacyMode(enabled);
       setHasVault(Boolean(mnemonic));
     } catch (error) {
-      console.error('Settings load failed:', error);
+      console.error('Failed to load settings:', error);
       setPrivacyMode(true);
       setHasVault(false);
     }
-  };
-
-  const addSafeActivity = async (
-    type: string,
-    title: string,
-    description: string
-  ) => {
-    try {
-      await ActivityService.addActivity(type as any, title, description);
-    } catch (error) {
-      console.log('Activity log skipped:', error);
-    }
-  };
-
-  const clearLocalActivity = async () => {
-    const activityService = ActivityService as any;
-
-    if (typeof activityService.clearActivities === 'function') {
-      await activityService.clearActivities();
-      return;
-    }
-
-    if (typeof activityService.clearActivity === 'function') {
-      await activityService.clearActivity();
-      return;
-    }
-
-    if (typeof activityService.clearAll === 'function') {
-      await activityService.clearAll();
-      return;
-    }
-
-    if (typeof activityService.deleteAll === 'function') {
-      await activityService.deleteAll();
-      return;
-    }
-
-    console.log('No activity clear method found. Skipping local activity clear.');
-  };
-
-  const clearLocalVault = async () => {
-    const vaultService = VaultService as any;
-
-    if (typeof vaultService.clearVault === 'function') {
-      await vaultService.clearVault();
-      return;
-    }
-
-    if (typeof vaultService.deleteVault === 'function') {
-      await vaultService.deleteVault();
-      return;
-    }
-
-    if (typeof vaultService.clearMnemonic === 'function') {
-      await vaultService.clearMnemonic();
-      return;
-    }
-
-    if (typeof vaultService.deleteMnemonic === 'function') {
-      await vaultService.deleteMnemonic();
-      return;
-    }
-
-    await SecureStore.deleteItemAsync('user_mnemonic');
-    await SecureStore.deleteItemAsync('ron1n_mnemonic');
-    await SecureStore.deleteItemAsync('shogun_mnemonic');
-    await SecureStore.deleteItemAsync('wallet_mnemonic');
-    await SecureStore.deleteItemAsync('vault_mnemonic');
-    await SecureStore.deleteItemAsync('ron1n_syn_id');
   };
 
   const togglePrivacy = async (value: boolean) => {
@@ -116,47 +52,117 @@ export default function SettingsScreen() {
       await PrivacyModeService.setEnabled(value);
       setPrivacyMode(value);
 
-      await addSafeActivity(
+      await ActivityService.addActivity(
         'SECURITY',
         value ? 'Privacy Mode Enabled' : 'Privacy Mode Disabled',
         'User updated Privacy Mode setting'
       );
     } catch (error) {
-      console.error('Privacy toggle failed:', error);
       Alert.alert('Error', 'Unable to update Privacy Mode.');
     }
   };
 
-  const showRecoveryWarning = async () => {
+  const authenticate = async (promptMessage: string) => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+
+    if (!hasHardware) {
+      Alert.alert('Authentication Unavailable', 'Biometric support is not available on this device.');
+      return false;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      fallbackLabel: 'Use device passcode',
+    });
+
+    if (!result.success) {
+      Alert.alert('Blocked', 'Authentication failed.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const openRecoveryBackup = async () => {
     if (!hasVault) {
       Alert.alert('No Vault', 'No local vault was found on this device.');
       return;
     }
 
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Authenticate to View Recovery Phrase',
-      fallbackLabel: 'Use device passcode',
-    });
+    const ok = await authenticate('Authenticate to Open Recovery Backup');
 
-    if (!result.success) {
-      Alert.alert('Blocked', 'Authentication failed.');
+    if (!ok) {
       return;
     }
 
+    try {
+      const mnemonic = await VaultService.getMnemonic();
+
+      if (!mnemonic) {
+        Alert.alert('No Vault', 'No recovery phrase was found on this device.');
+        return;
+      }
+
+      setRecoveryPhrase(mnemonic);
+      setPhraseVisible(false);
+      setMode('recovery');
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        'Recovery Backup Opened',
+        'User authenticated to open recovery phrase backup screen'
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Unable to open recovery phrase backup.');
+    }
+  };
+
+  const revealPhrase = async () => {
+    const ok = await authenticate('Authenticate to Reveal Recovery Phrase');
+
+    if (!ok) {
+      return;
+    }
+
+    setPhraseVisible(true);
+
+    await ActivityService.addActivity(
+      'SECURITY',
+      'Recovery Phrase Revealed',
+      'User authenticated to reveal recovery phrase'
+    );
+  };
+
+  const confirmBackedUp = async () => {
     Alert.alert(
-      'Recovery Phrase',
-      'For safety, do not screenshot, copy, or share your recovery phrase. Build the dedicated recovery phrase reveal screen next before showing this in production.'
+      'Backup Confirmed',
+      'Confirm that your recovery phrase is written down and stored offline. Anyone with this phrase can control the wallet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            await ActivityService.addActivity(
+              'SECURITY',
+              'Recovery Phrase Backup Confirmed',
+              'User confirmed recovery phrase backup'
+            );
+
+            setPhraseVisible(false);
+            setRecoveryPhrase('');
+            setMode('settings');
+
+            Alert.alert('Confirmed', 'Recovery phrase backup confirmation saved locally.');
+          },
+        },
+      ]
     );
   };
 
   const deleteLocalVault = async () => {
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Authenticate to Delete Local Vault',
-      fallbackLabel: 'Use device passcode',
-    });
+    const ok = await authenticate('Authenticate to Delete Local Vault');
 
-    if (!result.success) {
-      Alert.alert('Blocked', 'Authentication failed.');
+    if (!ok) {
       return;
     }
 
@@ -170,14 +176,31 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await clearLocalVault();
-              await clearLocalActivity();
+              await VaultService.clearVault();
+await ActivityService.clearActivities();
 
-              setHasVault(false);
+setHasVault(false);
+setRecoveryPhrase('');
+setPhraseVisible(false);
+setMode('settings');
 
-              Alert.alert('Vault Deleted', 'Local vault data was removed.');
+Alert.alert(
+  'Vault Deleted',
+  'Local vault data was removed. The app will restart to return to onboarding.',
+  [
+    {
+      text: 'Restart',
+      onPress: async () => {
+        try {
+          await Updates.reloadAsync();
+        } catch (error) {
+          console.error('Reload failed:', error);
+        }
+      },
+    },
+  ]
+);
             } catch (error) {
-              console.error('Delete local vault failed:', error);
               Alert.alert('Error', 'Unable to delete local vault.');
             }
           },
@@ -186,37 +209,80 @@ export default function SettingsScreen() {
     );
   };
 
-  const getNoCustodyDisclosure = () => {
-    const service = SecurityPolicyService as any;
-
-    if (typeof service.getNoCustodyDisclosure === 'function') {
-      return service.getNoCustodyDisclosure();
-    }
-
-    return 'Ron1n Syndicate does not custody user funds, recovery phrases, or private keys.';
+  const closeRecoveryScreen = () => {
+    setPhraseVisible(false);
+    setRecoveryPhrase('');
+    setMode('settings');
   };
 
-  const getQuantumDisclosure = () => {
-    const service = SecurityPolicyService as any;
+  const renderRecoveryScreen = () => {
+    const words = recoveryPhrase ? recoveryPhrase.split(' ') : [];
 
-    if (typeof service.getQuantumDisclosure === 'function') {
-      return service.getQuantumDisclosure();
-    }
+    return (
+      <Ron1nScreen>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <View style={styles.header}>
+            <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
+            <Text style={styles.title}>RECOVERY BACKUP</Text>
+            <Text style={styles.subtitle}>BIOMETRIC PROTECTED</Text>
+          </View>
 
-    return 'Quantum-ready features improve wallet security posture but do not make external public blockchains quantum-proof.';
+          <Ron1nCard>
+            <Text style={styles.dangerTitle}>CRITICAL WARNING</Text>
+            <Text style={styles.body}>
+              Your recovery phrase controls your wallet. Do not screenshot, upload,
+              text, email, or share this phrase. Ron1n Syndicate cannot recover it
+              for you.
+            </Text>
+          </Ron1nCard>
+
+          <Ron1nCard>
+            <Text style={styles.sectionTitle}>RECOVERY PHRASE</Text>
+
+            {!phraseVisible ? (
+              <>
+                <Text style={styles.body}>
+                  The phrase is hidden. Authenticate again to reveal it.
+                </Text>
+
+                <TouchableOpacity onPress={revealPhrase} style={styles.actionButton}>
+                  <Text style={styles.actionText}>REVEAL PHRASE</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <View style={styles.wordGrid}>
+                  {words.map((word, index) => (
+                    <View key={`${word}-${index}`} style={styles.wordBox}>
+                      <Text style={styles.wordNumber}>{index + 1}</Text>
+                      <Text style={styles.wordText}>{word}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setPhraseVisible(false)}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryText}>HIDE PHRASE</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </Ron1nCard>
+
+          <TouchableOpacity onPress={confirmBackedUp} style={styles.primaryButton}>
+            <Text style={styles.primaryText}>I HAVE BACKED THIS UP</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={closeRecoveryScreen} style={styles.secondaryButton}>
+            <Text style={styles.secondaryText}>BACK TO SETTINGS</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Ron1nScreen>
+    );
   };
 
-  const getFeeDisclosure = () => {
-    const service = SecurityPolicyService as any;
-
-    if (typeof service.getFeeDisclosure === 'function') {
-      return service.getFeeDisclosure();
-    }
-
-    return 'Network fees are paid to the selected blockchain network. Ron1n Syndicate does not create, control, or receive network fees.';
-  };
-
-  return (
+  const renderSettingsScreen = () => (
     <Ron1nScreen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.header}>
@@ -252,16 +318,16 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity onPress={showRecoveryWarning} style={styles.actionButton}>
+          <TouchableOpacity onPress={openRecoveryBackup} style={styles.actionButton}>
             <Text style={styles.actionText}>RECOVERY PHRASE BACKUP</Text>
           </TouchableOpacity>
         </Ron1nCard>
 
         <Ron1nCard>
           <Text style={styles.sectionTitle}>DISCLOSURES</Text>
-          <Text style={styles.body}>{getNoCustodyDisclosure()}</Text>
-          <Text style={styles.bodySpacer}>{getQuantumDisclosure()}</Text>
-          <Text style={styles.bodySpacer}>{getFeeDisclosure()}</Text>
+          <Text style={styles.body}>{SecurityPolicyService.getNoCustodyDisclosure()}</Text>
+          <Text style={styles.bodySpacer}>{SecurityPolicyService.getQuantumDisclosure()}</Text>
+          <Text style={styles.bodySpacer}>{SecurityPolicyService.getFeeDisclosure()}</Text>
         </Ron1nCard>
 
         <Ron1nCard>
@@ -277,6 +343,8 @@ export default function SettingsScreen() {
       </ScrollView>
     </Ron1nScreen>
   );
+
+  return mode === 'recovery' ? renderRecoveryScreen() : renderSettingsScreen();
 }
 
 const styles = StyleSheet.create({
@@ -299,6 +367,7 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: '900',
     letterSpacing: 3,
+    textAlign: 'center',
   },
   subtitle: {
     color: Ron1nColors.green,
@@ -355,6 +424,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   actionButton: {
+    marginTop: 14,
     borderRadius: 16,
     paddingVertical: 14,
     borderWidth: 1,
@@ -365,6 +435,35 @@ const styles = StyleSheet.create({
   actionText: {
     color: Ron1nColors.gold,
     fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  primaryButton: {
+    marginTop: 12,
+    borderRadius: 18,
+    paddingVertical: 16,
+    backgroundColor: '#00FF4122',
+    borderWidth: 1,
+    borderColor: '#00FF4188',
+    alignItems: 'center',
+  },
+  primaryText: {
+    color: Ron1nColors.green,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  secondaryButton: {
+    marginTop: 12,
+    borderRadius: 18,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: '#444444',
+    alignItems: 'center',
+  },
+  secondaryText: {
+    color: '#BBBBBB',
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 2,
   },
@@ -389,5 +488,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2,
+  },
+  wordGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  wordBox: {
+    width: '47%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FFD70044',
+    backgroundColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  wordNumber: {
+    color: '#777777',
+    fontSize: 9,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  wordText: {
+    color: Ron1nColors.gold,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });
