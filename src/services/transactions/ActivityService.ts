@@ -9,7 +9,8 @@ export type Ron1nActivityType =
   | 'SEND_REVIEW'
   | 'SEND_BLOCKED'
   | 'SECURITY'
-  | 'SYNC'; // Added SYNC type
+  | 'SYNC'
+  | 'ERROR';
 
 export type Ron1nActivity = {
   id: string;
@@ -20,25 +21,14 @@ export type Ron1nActivity = {
 };
 
 const ACTIVITY_KEY = 'ron1n_activity_v1';
+const MAX_ACTIVITY_ITEMS = 150;
 
 export class ActivityService {
-  // NEW: Added this method to resolve the error in WalletScreen.tsx
-  static async fetchChainActivity(): Promise<Ron1nActivity[]> {
-    try {
-      // Mocking a chain fetch; replace with your actual API/RPC call
-      console.log('Fetching chain activity...');
-      return []; 
-    } catch (error) {
-      console.error('Failed to fetch chain activity:', error);
-      throw error;
-    }
-  }
-
   static async addActivity(
     type: Ron1nActivityType,
     title: string,
     detail: string
-  ) {
+  ): Promise<void> {
     const current = await this.getActivities();
 
     const event: Ron1nActivity = {
@@ -49,21 +39,38 @@ export class ActivityService {
       createdAt: new Date().toISOString(),
     };
 
-    const next = [event, ...current].slice(0, 100);
+    const next = [event, ...current].slice(0, MAX_ACTIVITY_ITEMS);
     await AsyncStorage.setItem(ACTIVITY_KEY, JSON.stringify(next));
   }
 
   static async getActivities(): Promise<Ron1nActivity[]> {
     try {
       const raw = await AsyncStorage.getItem(ACTIVITY_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
-    } catch {
+
+      if (!raw) {
+        return [];
+      }
+
+      const parsed = JSON.parse(raw);
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed
+        .filter((item) => item && item.id && item.type && item.title)
+        .sort((a, b) => {
+          const aTime = new Date(a.createdAt || 0).getTime();
+          const bTime = new Date(b.createdAt || 0).getTime();
+          return bTime - aTime;
+        });
+    } catch (error) {
+      console.warn('Failed to read local activity:', error);
       return [];
     }
   }
 
-  static async clearActivities() {
+  static async clearActivities(): Promise<void> {
     await AsyncStorage.removeItem(ACTIVITY_KEY);
   }
 }
