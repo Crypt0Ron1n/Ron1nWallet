@@ -23,6 +23,7 @@ import {
   type ExposureLevel,
   type PortfolioExposureReport,
 } from '../services/security/ExposureScannerService';
+import { AddressRotationPrepService } from '../services/security/AddressRotationPrepService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
 function calculateSecurityScore(report: PortfolioExposureReport | null): number {
@@ -151,6 +152,35 @@ export default function SecurityScreen() {
     }
   };
 
+  const prepareRotation = async (report: AssetExposureReport) => {
+    try {
+      const record = await AddressRotationPrepService.prepare(report);
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        `${report.symbol} Rotation Prepared`,
+        `${record.recommendedLabel} prepared locally. No funds moved.`
+      );
+
+      Alert.alert(
+        'Fresh Receive Address Prepared',
+        `${record.recommendedLabel}\n\n${record.safetyNote}`
+      );
+
+      await load();
+    } catch (error) {
+      console.error('Prepare rotation failed:', error);
+
+      await ActivityService.addActivity(
+        'ERROR',
+        `${report.symbol} Rotation Prep Failed`,
+        'Unable to prepare local address rotation record'
+      );
+
+      Alert.alert('Rotation Prep Failed', `Unable to prepare ${report.symbol} rotation.`);
+    }
+  };
+
   const latestSyncTime = portfolioReport?.reports
     ?.map((item) => item.lastSyncedAt)
     .filter(Boolean)
@@ -243,7 +273,13 @@ export default function SecurityScreen() {
         </Ron1nCard>
 
         {exposureReports.length > 0 ? (
-          exposureReports.map((item) => <ExposureCard key={item.symbol} report={item} />)
+          exposureReports.map((item) => (
+            <ExposureCard
+              key={item.symbol}
+              report={item}
+              onPrepareRotation={prepareRotation}
+            />
+          ))
         ) : (
           <Ron1nCard>
             <Text style={styles.cardTitle}>NO ASSET EXPOSURE REPORTS</Text>
@@ -294,8 +330,16 @@ export default function SecurityScreen() {
   );
 }
 
-function ExposureCard({ report }: { report: AssetExposureReport }) {
+function ExposureCard({
+  report,
+  onPrepareRotation,
+}: {
+  report: AssetExposureReport;
+  onPrepareRotation: (report: AssetExposureReport) => void;
+}) {
   const color = exposureColor(report.exposureLevel);
+  const showRotationButton =
+    report.exposureLevel === 'LOW' || report.exposureLevel === 'ELEVATED';
 
   return (
     <Ron1nCard>
@@ -324,6 +368,29 @@ function ExposureCard({ report }: { report: AssetExposureReport }) {
 
       <Text style={styles.recommendationTitle}>RECOMMENDATION</Text>
       <Text style={styles.recommendation}>{report.recommendation}</Text>
+
+      {showRotationButton ? (
+        <TouchableOpacity
+          style={styles.rotationButton}
+          onPress={() => onPrepareRotation(report)}
+        >
+          <Text style={styles.rotationButtonText}>
+            PREPARE FRESH RECEIVE ADDRESS
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
+      {report.exposureLevel === 'FRESH' ? (
+        <Text style={styles.freshNote}>
+          Fresh state detected. Rotation is optional.
+        </Text>
+      ) : null}
+
+      {report.exposureLevel === 'UNKNOWN' ? (
+        <Text style={styles.unknownNote}>
+          Retry Manual Sync before relying on this address status.
+        </Text>
+      ) : null}
     </Ron1nCard>
   );
 }
@@ -551,6 +618,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 8,
+  },
+  rotationButton: {
+    marginTop: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#FFD70088',
+    backgroundColor: '#FFD70018',
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  rotationButtonText: {
+    color: Ron1nColors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+    letterSpacing: 1,
+  },
+  freshNote: {
+    color: Ron1nColors.green,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 14,
+  },
+  unknownNote: {
+    color: '#AAAAAA',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 14,
   },
   pending: {
     color: Ron1nColors.gold,
