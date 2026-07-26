@@ -15,6 +15,8 @@ import * as Updates from 'expo-updates';
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
 import { ActivityService } from '../services/transactions/ActivityService';
+import { ChainActivityCacheService } from '../services/transactions/ChainActivityCacheService';
+import { AddressRotationPrepService } from '../services/security/AddressRotationPrepService';
 import { PrivacyModeService } from '../services/PrivacyModeService';
 import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import { VaultService } from '../services/VaultService';
@@ -28,6 +30,9 @@ export default function SettingsScreen() {
   const [hasVault, setHasVault] = useState(false);
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
   const [phraseVisible, setPhraseVisible] = useState(false);
+  const [chainCacheCount, setChainCacheCount] = useState(0);
+  const [rotationPrepCount, setRotationPrepCount] = useState(0);
+  const [activityCount, setActivityCount] = useState(0);
 
   useEffect(() => {
     load();
@@ -35,15 +40,27 @@ export default function SettingsScreen() {
 
   const load = async () => {
     try {
-      const enabled = await PrivacyModeService.isEnabled();
-      const mnemonic = await VaultService.getMnemonic();
+      const [enabled, mnemonic, chainCache, rotationRecords, activities] =
+        await Promise.all([
+          PrivacyModeService.isEnabled(),
+          VaultService.getMnemonic(),
+          ChainActivityCacheService.getCache(),
+          AddressRotationPrepService.getAll(),
+          ActivityService.getActivities(),
+        ]);
 
       setPrivacyMode(enabled);
       setHasVault(Boolean(mnemonic));
+      setChainCacheCount(Object.keys(chainCache).length);
+      setRotationPrepCount(rotationRecords.length);
+      setActivityCount(activities.length);
     } catch (error) {
       console.error('Failed to load settings:', error);
       setPrivacyMode(true);
       setHasVault(false);
+      setChainCacheCount(0);
+      setRotationPrepCount(0);
+      setActivityCount(0);
     }
   };
 
@@ -81,6 +98,8 @@ export default function SettingsScreen() {
         value ? 'Privacy Mode Enabled' : 'Privacy Mode Disabled',
         'User updated Privacy Mode setting'
       );
+
+      await load();
     } catch (error) {
       Alert.alert('Error', 'Unable to update Privacy Mode.');
     }
@@ -115,6 +134,8 @@ export default function SettingsScreen() {
         'Recovery Backup Opened',
         'User authenticated to open recovery phrase backup screen'
       );
+
+      await load();
     } catch (error) {
       Alert.alert('Error', 'Unable to open recovery phrase backup.');
     }
@@ -134,6 +155,8 @@ export default function SettingsScreen() {
       'Recovery Phrase Revealed',
       'User authenticated to reveal recovery phrase'
     );
+
+    await load();
   };
 
   const confirmBackedUp = async () => {
@@ -155,6 +178,8 @@ export default function SettingsScreen() {
             setRecoveryPhrase('');
             setMode('settings');
 
+            await load();
+
             Alert.alert('Confirmed', 'Recovery phrase backup confirmation saved locally.');
           },
         },
@@ -175,6 +200,147 @@ export default function SettingsScreen() {
     }
   };
 
+  const clearChainCache = async () => {
+    const ok = await authenticate('Authenticate to Clear Chain Cache');
+
+    if (!ok) {
+      return;
+    }
+
+    Alert.alert(
+      'Clear Chain Cache',
+      'This clears cached public-chain history from this device. It does not affect your wallet, assets, addresses, or blockchain records.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ChainActivityCacheService.clearCache();
+
+              await ActivityService.addActivity(
+                'SECURITY',
+                'Chain Activity Cache Cleared',
+                'User cleared cached public-chain activity from this device'
+              );
+
+              await load();
+
+              Alert.alert('Cleared', 'Cached chain activity has been cleared.');
+            } catch (error) {
+              Alert.alert('Error', 'Unable to clear chain cache.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const clearRotationPrepRecords = async () => {
+    const ok = await authenticate('Authenticate to Clear Rotation Prep Records');
+
+    if (!ok) {
+      return;
+    }
+
+    Alert.alert(
+      'Clear Rotation Prep Records',
+      'This clears local fresh receive address preparation records only. It does not move funds or affect blockchain history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AddressRotationPrepService.clearAll();
+
+              await ActivityService.addActivity(
+                'SECURITY',
+                'Rotation Prep Records Cleared',
+                'User cleared local address rotation prep records'
+              );
+
+              await load();
+
+              Alert.alert('Cleared', 'Rotation prep records have been cleared.');
+            } catch (error) {
+              Alert.alert('Error', 'Unable to clear rotation prep records.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const clearLocalActivity = async () => {
+    const ok = await authenticate('Authenticate to Clear Private Activity');
+
+    if (!ok) {
+      return;
+    }
+
+    Alert.alert(
+      'Clear Private Activity',
+      'This clears local private activity events from this device. It does not delete your wallet.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ActivityService.clearActivities();
+              setActivityCount(0);
+
+              Alert.alert('Cleared', 'Private activity has been cleared.');
+            } catch (error) {
+              Alert.alert('Error', 'Unable to clear private activity.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const clearAllNonVaultData = async () => {
+    const ok = await authenticate('Authenticate to Clear Local Data');
+
+    if (!ok) {
+      return;
+    }
+
+    Alert.alert(
+      'Clear Local Non-Vault Data',
+      'This clears private activity, cached chain activity, and rotation prep records. It does not delete your recovery phrase or local vault.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await Promise.all([
+                ActivityService.clearActivities(),
+                ChainActivityCacheService.clearCache(),
+                AddressRotationPrepService.clearAll(),
+              ]);
+
+              setActivityCount(0);
+              setChainCacheCount(0);
+              setRotationPrepCount(0);
+
+              Alert.alert('Cleared', 'Local non-vault data has been cleared.');
+            } catch (error) {
+              Alert.alert('Error', 'Unable to clear local non-vault data.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const deleteLocalVault = async () => {
     const ok = await authenticate('Authenticate to Delete Local Vault');
 
@@ -192,13 +358,20 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await VaultService.clearVault();
-              await ActivityService.clearActivities();
+              await Promise.all([
+                VaultService.clearVault(),
+                ActivityService.clearActivities(),
+                ChainActivityCacheService.clearCache(),
+                AddressRotationPrepService.clearAll(),
+              ]);
 
               setHasVault(false);
               setRecoveryPhrase('');
               setPhraseVisible(false);
               setMode('settings');
+              setActivityCount(0);
+              setChainCacheCount(0);
+              setRotationPrepCount(0);
 
               Alert.alert(
                 'Vault Deleted',
@@ -335,6 +508,38 @@ export default function SettingsScreen() {
         </Ron1nCard>
 
         <Ron1nCard>
+          <Text style={styles.sectionTitle}>LOCAL DATA CONTROLS</Text>
+
+          <DataRow label="Private Activity" value={`${activityCount} events`} />
+          <DataRow label="Chain Activity Cache" value={`${chainCacheCount} assets`} />
+          <DataRow label="Rotation Prep Records" value={`${rotationPrepCount} records`} />
+
+          <TouchableOpacity onPress={clearLocalActivity} style={styles.utilityButton}>
+            <Text style={styles.utilityText}>CLEAR PRIVATE ACTIVITY</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={clearChainCache} style={styles.utilityButton}>
+            <Text style={styles.utilityText}>CLEAR CHAIN CACHE</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={clearRotationPrepRecords} style={styles.utilityButton}>
+            <Text style={styles.utilityText}>CLEAR ROTATION PREP RECORDS</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={clearAllNonVaultData} style={styles.warningButton}>
+            <Text style={styles.warningText}>CLEAR ALL NON-VAULT DATA</Text>
+          </TouchableOpacity>
+        </Ron1nCard>
+
+        <Ron1nCard>
+          <Text style={styles.sectionTitle}>APP ENVIRONMENT</Text>
+          <DataRow label="App" value="Ron1n Syndicate" />
+          <DataRow label="Wallet UI" value="Shogun Wallet" />
+          <DataRow label="Mode" value="Development Build" />
+          <DataRow label="Custody" value="Self-Custodial" />
+        </Ron1nCard>
+
+        <Ron1nCard>
           <Text style={styles.sectionTitle}>DISCLOSURES</Text>
           <Text style={styles.body}>{SecurityPolicyService.getNoCustodyDisclosure()}</Text>
           <Text style={styles.bodySpacer}>{SecurityPolicyService.getQuantumDisclosure()}</Text>
@@ -356,6 +561,15 @@ export default function SettingsScreen() {
   );
 
   return mode === 'recovery' ? renderRecoveryScreen() : renderSettingsScreen();
+}
+
+function DataRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.dataRow}>
+      <Text style={styles.dataLabel}>{label}</Text>
+      <Text style={styles.dataValue}>{value}</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -478,6 +692,36 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2,
   },
+  utilityButton: {
+    marginTop: 10,
+    borderRadius: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: '#00FF4144',
+    backgroundColor: '#00FF410D',
+    alignItems: 'center',
+  },
+  utilityText: {
+    color: Ron1nColors.green,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  warningButton: {
+    marginTop: 10,
+    borderRadius: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: '#FFD70066',
+    backgroundColor: '#FFD70012',
+    alignItems: 'center',
+  },
+  warningText: {
+    color: Ron1nColors.gold,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
   dangerTitle: {
     color: '#FF7777',
     fontSize: 13,
@@ -527,5 +771,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     letterSpacing: 1,
+  },
+  dataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222222',
+    paddingVertical: 10,
+  },
+  dataLabel: {
+    color: '#AAAAAA',
+    fontSize: 12,
+    flex: 1,
+  },
+  dataValue: {
+    color: Ron1nColors.gold,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'right',
+    flex: 1,
   },
 });
