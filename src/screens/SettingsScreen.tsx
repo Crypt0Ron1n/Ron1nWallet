@@ -18,6 +18,7 @@ import { ActivityService } from '../services/transactions/ActivityService';
 import { ChainActivityCacheService } from '../services/transactions/ChainActivityCacheService';
 import { AddressRotationPrepService } from '../services/security/AddressRotationPrepService';
 import { PrivacyModeService } from '../services/PrivacyModeService';
+import { ScreenProtectionService } from '../services/ScreenProtectionService';
 import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import { VaultService } from '../services/VaultService';
 import { Ron1nColors } from '../theme/ron1nTheme';
@@ -27,6 +28,7 @@ type SettingsMode = 'settings' | 'recovery';
 export default function SettingsScreen() {
   const [mode, setMode] = useState<SettingsMode>('settings');
   const [privacyMode, setPrivacyMode] = useState(true);
+  const [screenProtection, setScreenProtection] = useState(true);
   const [hasVault, setHasVault] = useState(false);
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
   const [phraseVisible, setPhraseVisible] = useState(false);
@@ -40,16 +42,24 @@ export default function SettingsScreen() {
 
   const load = async () => {
     try {
-      const [enabled, mnemonic, chainCache, rotationRecords, activities] =
-        await Promise.all([
-          PrivacyModeService.isEnabled(),
-          VaultService.getMnemonic(),
-          ChainActivityCacheService.getCache(),
-          AddressRotationPrepService.getAll(),
-          ActivityService.getActivities(),
-        ]);
+      const [
+        enabled,
+        captureProtection,
+        mnemonic,
+        chainCache,
+        rotationRecords,
+        activities,
+      ] = await Promise.all([
+        PrivacyModeService.isEnabled(),
+        ScreenProtectionService.isEnabled(),
+        VaultService.getMnemonic(),
+        ChainActivityCacheService.getCache(),
+        AddressRotationPrepService.getAll(),
+        ActivityService.getActivities(),
+      ]);
 
       setPrivacyMode(enabled);
+      setScreenProtection(captureProtection);
       setHasVault(Boolean(mnemonic));
       setChainCacheCount(Object.keys(chainCache).length);
       setRotationPrepCount(rotationRecords.length);
@@ -57,6 +67,7 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error('Failed to load settings:', error);
       setPrivacyMode(true);
+      setScreenProtection(true);
       setHasVault(false);
       setChainCacheCount(0);
       setRotationPrepCount(0);
@@ -102,6 +113,23 @@ export default function SettingsScreen() {
       await load();
     } catch (error) {
       Alert.alert('Error', 'Unable to update Privacy Mode.');
+    }
+  };
+
+  const toggleScreenProtection = async (value: boolean) => {
+    try {
+      await ScreenProtectionService.setEnabled(value);
+      setScreenProtection(value);
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        value ? 'Screen Capture Protection Enabled' : 'Screen Capture Protection Disabled',
+        'User updated screen capture protection setting'
+      );
+
+      await load();
+    } catch (error) {
+      Alert.alert('Error', 'Unable to update screen capture protection.');
     }
   };
 
@@ -494,6 +522,25 @@ export default function SettingsScreen() {
         </Ron1nCard>
 
         <Ron1nCard>
+          <View style={styles.settingRow}>
+            <View style={styles.settingCopy}>
+              <Text style={styles.settingTitle}>Screen Capture Protection</Text>
+              <Text style={styles.body}>
+                Helps block screenshots and screen recording on sensitive wallet screens
+                when supported by the device.
+              </Text>
+            </View>
+
+            <Switch
+              value={screenProtection}
+              onValueChange={toggleScreenProtection}
+              trackColor={{ false: '#333333', true: '#00FF4166' }}
+              thumbColor={screenProtection ? Ron1nColors.green : '#888888'}
+            />
+          </View>
+        </Ron1nCard>
+
+        <Ron1nCard>
           <Text style={styles.sectionTitle}>VAULT</Text>
 
           <View style={styles.statusPill}>
@@ -537,6 +584,10 @@ export default function SettingsScreen() {
           <DataRow label="Wallet UI" value="Shogun Wallet" />
           <DataRow label="Mode" value="Development Build" />
           <DataRow label="Custody" value="Self-Custodial" />
+          <DataRow
+            label="Screen Protection"
+            value={screenProtection ? 'Enabled' : 'Disabled'}
+          />
         </Ron1nCard>
 
         <Ron1nCard>
