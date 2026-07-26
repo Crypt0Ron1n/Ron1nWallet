@@ -23,7 +23,11 @@ import {
   type ExposureLevel,
   type PortfolioExposureReport,
 } from '../services/security/ExposureScannerService';
-import { AddressRotationPrepService } from '../services/security/AddressRotationPrepService';
+import {
+  AddressRotationPrepService,
+  type AddressRotationPrepRecord,
+  type RotationPrepStatus,
+} from '../services/security/AddressRotationPrepService';
 import { Ron1nColors } from '../theme/ron1nTheme';
 
 function calculateSecurityScore(report: PortfolioExposureReport | null): number {
@@ -75,17 +79,25 @@ function exposureStatusText(level: ExposureLevel) {
   return 'UNKNOWN';
 }
 
+function rotationStatusColor(status: RotationPrepStatus) {
+  if (status === 'PREPARED') return Ron1nColors.gold;
+  if (status === 'COMPLETED') return Ron1nColors.green;
+  return '#999999';
+}
+
 export default function SecurityScreen() {
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [chainCache, setChainCache] = useState<Record<string, CachedChainActivity>>({});
   const [portfolioReport, setPortfolioReport] = useState<PortfolioExposureReport | null>(null);
+  const [rotationRecords, setRotationRecords] = useState<AddressRotationPrepRecord[]>([]);
   const [score, setScore] = useState(82);
 
   const load = async () => {
     try {
-      const [activityData, cacheData] = await Promise.all([
+      const [activityData, cacheData, rotationData] = await Promise.all([
         ActivityService.getActivities(),
         ChainActivityCacheService.getCache(),
+        AddressRotationPrepService.getAll(),
       ]);
 
       const report = ExposureScannerService.scanPortfolio(cacheData);
@@ -93,6 +105,7 @@ export default function SecurityScreen() {
       setActivities(activityData);
       setChainCache(cacheData);
       setPortfolioReport(report);
+      setRotationRecords(rotationData);
       setScore(calculateSecurityScore(report));
     } catch (error) {
       console.error('Security screen load failed:', error);
@@ -181,6 +194,55 @@ export default function SecurityScreen() {
     }
   };
 
+  const updateRotationStatus = async (
+    record: AddressRotationPrepRecord,
+    status: RotationPrepStatus
+  ) => {
+    try {
+      await AddressRotationPrepService.updateStatus(record.id, status);
+
+      await ActivityService.addActivity(
+        'SECURITY',
+        `${record.symbol} Rotation ${status}`,
+        `${record.recommendedLabel} marked ${status.toLowerCase()} locally.`
+      );
+
+      await load();
+    } catch (error) {
+      console.error('Rotation status update failed:', error);
+      Alert.alert('Update Failed', 'Unable to update rotation prep status.');
+    }
+  };
+
+  const clearRotationPreps = async () => {
+    Alert.alert(
+      'Clear Rotation Prep Records',
+      'This clears local rotation prep records only. It does not affect your wallet, addresses, assets, or blockchain history.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AddressRotationPrepService.clearAll();
+
+              await ActivityService.addActivity(
+                'SECURITY',
+                'Rotation Prep Records Cleared',
+                'User cleared local address rotation prep records'
+              );
+
+              await load();
+            } catch (error) {
+              Alert.alert('Error', 'Unable to clear rotation prep records.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const latestSyncTime = portfolioReport?.reports
     ?.map((item) => item.lastSyncedAt)
     .filter(Boolean)
@@ -223,7 +285,11 @@ export default function SecurityScreen() {
             status={portfolioReport ? exposureStatusText(portfolioReport.overallLevel) : 'NO SCAN'}
             color={portfolioReport ? exposureColor(portfolioReport.overallLevel) : Ron1nColors.gray}
           />
-          <StatusTile title="PQ VAULT" status="ROADMAP" color={Ron1nColors.gold} />
+          <StatusTile
+            title="ROTATION"
+            status={rotationRecords.length > 0 ? `${rotationRecords.length} PREP` : 'NONE'}
+            color={rotationRecords.length > 0 ? Ron1nColors.gold : Ron1nColors.gray}
+          />
         </View>
 
         <Ron1nCard>
@@ -288,6 +354,38 @@ export default function SecurityScreen() {
             </Text>
           </Ron1nCard>
         )}
+
+        <Ron1nCard>
+          <View style={styles.rotationHeader}>
+            <Text style={styles.cardTitle}>PREPARED FRESH RECEIVE ADDRESSES</Text>
+
+            {rotationRecords.length > 0 ? (
+              <TouchableOpacity onPress={clearRotationPreps}>
+                <Text style={styles.clearText}>CLEAR</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <Text style={styles.cardText}>
+            These are local preparation records only. They do not move funds, sign
+            transactions, broadcast transactions, or custody assets.
+          </Text>
+
+          {rotationRecords.length === 0 ? (
+            <Text style={styles.emptyPrep}>No rotation prep records yet.</Text>
+          ) : (
+            <View style={styles.rotationList}>
+              {rotationRecords.map((record) => (
+                <RotationPrepCard
+                  key={record.id}
+                  record={record}
+                  onDismiss={() => updateRotationStatus(record, 'DISMISSED')}
+                  onComplete={() => updateRotationStatus(record, 'COMPLETED')}
+                />
+              ))}
+            </View>
+          )}
+        </Ron1nCard>
 
         <Ron1nCard>
           <Text style={styles.cardTitle}>RON1N IS A SECURITY LAYER</Text>
@@ -392,6 +490,58 @@ function ExposureCard({
         </Text>
       ) : null}
     </Ron1nCard>
+  );
+}
+
+function RotationPrepCard({
+  record,
+  onDismiss,
+  onComplete,
+}: {
+  record: AddressRotationPrepRecord;
+  onDismiss: () => void;
+  onComplete: () => void;
+}) {
+  const active = record.status === 'PREPARED';
+
+  return (
+    <View style={styles.rotationPrepCard}>
+      <View style={styles.rotationPrepHeader}>
+        <View style={styles.rotationPrepTitleWrap}>
+          <Text style={styles.rotationSymbol}>{record.symbol}</Text>
+          <Text style={styles.rotationLabel}>{record.recommendedLabel}</Text>
+        </View>
+
+        <Text style={[styles.rotationStatus, { color: rotationStatusColor(record.status) }]}>
+          {record.status}
+        </Text>
+      </View>
+
+      <Text style={styles.rotationReason}>{record.reason}</Text>
+
+      <Text style={styles.rotationSafety}>{record.safetyNote}</Text>
+
+      <View style={styles.exposureMetaRow}>
+        <Text style={styles.metaPill}>TX: {record.transactionCount}</Text>
+        <Text style={styles.metaPill}>EXPOSURE: {record.exposureLevel}</Text>
+      </View>
+
+      <Text style={styles.activityTime}>
+        Created: {new Date(record.createdAt).toLocaleString()}
+      </Text>
+
+      {active ? (
+        <View style={styles.rotationActionRow}>
+          <TouchableOpacity style={styles.dismissButton} onPress={onDismiss}>
+            <Text style={styles.dismissButtonText}>DISMISS</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.completeButton} onPress={onComplete}>
+            <Text style={styles.completeButtonText}>MARK COMPLETED</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -646,6 +796,104 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 17,
     marginTop: 14,
+  },
+  rotationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'center',
+  },
+  clearText: {
+    color: Ron1nColors.red,
+    fontSize: 11,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  emptyPrep: {
+    color: Ron1nColors.gray,
+    marginTop: 16,
+    fontSize: 12,
+  },
+  rotationList: {
+    gap: 12,
+    marginTop: 16,
+  },
+  rotationPrepCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FFD70033',
+    backgroundColor: '#000000',
+    padding: 14,
+  },
+  rotationPrepHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rotationPrepTitleWrap: {
+    flex: 1,
+  },
+  rotationSymbol: {
+    color: Ron1nColors.gold,
+    fontSize: 16,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  rotationLabel: {
+    color: Ron1nColors.green,
+    fontSize: 10,
+    marginTop: 6,
+    fontWeight: '900',
+  },
+  rotationStatus: {
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'KatakanaStyle',
+  },
+  rotationReason: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 12,
+  },
+  rotationSafety: {
+    color: '#888888',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 10,
+  },
+  rotationActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  dismissButton: {
+    flex: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#777777',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  dismissButtonText: {
+    color: '#BBBBBB',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  completeButton: {
+    flex: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#00FF4166',
+    backgroundColor: '#00FF4110',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    color: Ron1nColors.green,
+    fontSize: 10,
+    fontWeight: '900',
   },
   pending: {
     color: Ron1nColors.gold,
