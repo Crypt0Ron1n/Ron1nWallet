@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ScreenProtectionService } from './src/services/ScreenProtectionService';
 
 import ActivityScreen from './src/screens/ActivityScreen';
 import AssetsScreen from './src/screens/AssetsScreen';
@@ -62,8 +63,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    checkVault();
-  }, []);
+  ScreenProtectionService.applySavedPreference();
+  checkVault();
+}, []);
 
   if (checkingVault) {
     return (
