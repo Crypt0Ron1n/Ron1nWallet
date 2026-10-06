@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { generateMnemonic, validateMnemonic } from '@scure/bip39';
-import { wordlist } from '@scure/bip39/wordlists/english';
+import { wordlist } from '@scure/bip39/wordlists/english.js';
 
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';

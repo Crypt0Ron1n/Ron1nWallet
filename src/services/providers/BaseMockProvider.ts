@@ -1,11 +1,13 @@
 import { Ron1nBalance } from '../balances/types';
 import { Ron1nTransaction } from '../transactions/types';
+import type { SignedPayload } from '../crypto/types';
 import {
   AddressExposureInfo,
   ChainFamily,
   ChainProvider,
   ChainProviderStatus,
   TransactionRequest,
+  BroadcastReconciliation,
 } from './types';
 
 export class BaseMockProvider implements ChainProvider {
@@ -58,7 +60,12 @@ export class BaseMockProvider implements ChainProvider {
     return BigInt(0);
   }
 
-  async broadcast(_signedTx: string): Promise<string> {
-    throw new Error(`${this.chain} broadcast is not connected yet.`);
+  async broadcastSignedTransaction(_signed: SignedPayload): Promise<string> {
+    throw new Error(`${this.chain} signed broadcast is not connected yet.`);
+  }
+
+  async reconcileBroadcast(_transactionHash: string): Promise<BroadcastReconciliation> {
+    throw new Error(`${this.chain} broadcast reconciliation is not connected yet.`);
   }
 }
+

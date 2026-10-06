@@ -1,78 +1,40 @@
-import * as SecureStore from 'expo-secure-store';
+import { InternalVaultService } from './crypto/InternalVaultService';
 
-const MNEMONIC_KEY = 'ron1n_master_mnemonic';
-const LEGACY_MNEMONIC_KEY = 'user_mnemonic';
-const SYN_ID_KEY = 'ron1n_syn_id';
-const LEGACY_SYN_ID_KEY = 'syn_id';
-
+/**
+ * Public application-facing vault adapter.
+ *
+ * Secret material is physically stored and retrieved by InternalVaultService.
+ * getMnemonic() is retained temporarily for compatibility with existing
+ * App.tsx and SettingsScreen.tsx callers. New cryptographic code should use
+ * CryptoCore instead of retrieving the mnemonic directly.
+ */
 export const VaultService = {
   async saveMnemonic(mnemonic: string): Promise<void> {
-    const cleanMnemonic = mnemonic.trim().toLowerCase().replace(/\s+/g, ' ');
-
-    await SecureStore.setItemAsync(MNEMONIC_KEY, cleanMnemonic, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    });
-
-    // Keep legacy key in sync for older screens/services that may still check it.
-    await SecureStore.setItemAsync(LEGACY_MNEMONIC_KEY, cleanMnemonic, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-    });
+    return InternalVaultService.saveMnemonic(mnemonic);
   },
 
+  /**
+   * @deprecated Compatibility API for existing legacy screens.
+   * Do not use this for signing, address derivation, transaction creation,
+   * or other cryptographic operations. Those operations belong in CryptoCore.
+   */
   async getMnemonic(): Promise<string | null> {
-    const current = await SecureStore.getItemAsync(MNEMONIC_KEY);
-
-    if (current) {
-      return current;
-    }
-
-    const legacy = await SecureStore.getItemAsync(LEGACY_MNEMONIC_KEY);
-
-    if (legacy) {
-      // Migrate legacy vault key forward.
-      await this.saveMnemonic(legacy);
-      return legacy;
-    }
-
-    return null;
+    return InternalVaultService.getMnemonic();
   },
 
   async hasVault(): Promise<boolean> {
-    const mnemonic = await this.getMnemonic();
-    return Boolean(mnemonic);
+    return InternalVaultService.hasVault();
   },
 
   async saveSynId(synId: string): Promise<void> {
-    await SecureStore.setItemAsync(SYN_ID_KEY, synId);
-    await SecureStore.setItemAsync(LEGACY_SYN_ID_KEY, synId);
+    return InternalVaultService.saveSynId(synId);
   },
 
   async getSynId(): Promise<string | null> {
-    const current = await SecureStore.getItemAsync(SYN_ID_KEY);
-
-    if (current) {
-      return current;
-    }
-
-    return SecureStore.getItemAsync(LEGACY_SYN_ID_KEY);
+    return InternalVaultService.getSynId();
   },
 
   async clearVault(): Promise<void> {
-    const keys = [
-      MNEMONIC_KEY,
-      LEGACY_MNEMONIC_KEY,
-      SYN_ID_KEY,
-      LEGACY_SYN_ID_KEY,
-    ];
-
-    await Promise.all(
-      keys.map(async (key) => {
-        try {
-          await SecureStore.deleteItemAsync(key);
-        } catch (error) {
-          console.warn(`Failed to delete SecureStore key: ${key}`, error);
-        }
-      })
-    );
+    return InternalVaultService.clearVault();
   },
 };

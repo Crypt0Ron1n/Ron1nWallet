@@ -1,54 +1,61 @@
-{
-  "expo": {
-    "name": "Ron1n Syndicate",
-    "slug": "ron1nwallet",
-    "scheme": "ron1nwallet",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.ron1nsyndicate.wallet",
-      "infoPlist": {
-        "NSFaceIDUsageDescription": "Ron1n Syndicate uses Face ID to protect wallet actions, recovery access, and security confirmations."
-      }
-    },
-    "android": {
-      "package": "com.ron1nsyndicate.wallet",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#000000"
-      },
-      "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
-      ]
-    },
-    "plugins": [
-      "expo-secure-store",
-      "expo-font",
-      "expo-local-authentication",
-      [
-        "expo-asset",
-        {
-          "assets": [
-            "./assets/icon.png",
-            "./assets/rs-gold.png",
-            "./assets/rs-graffiti.png"
-          ]
-        }
-      ]
-    ],
-    "extra": {
-      "appBrand": "Ron1n Syndicate",
-      "walletUiTitle": "SHOGUN WALLET"
-    }
-  }
+﻿{
+    "expo":  {
+                 "name":  "Ron1n Syndicate",
+                 "slug":  "ron1nwallet",
+                 "scheme":  "ron1nwallet",
+                 "version":  "1.0.0",
+                 "orientation":  "portrait",
+                 "icon":  "./assets/icon.png",
+                 "userInterfaceStyle":  "dark",
+                 "newArchEnabled":  true,
+                 "splash":  {
+                                "image":  "./assets/icon.png",
+                                "resizeMode":  "contain",
+                                "backgroundColor":  "#000000"
+                            },
+                 "ios":  {
+                             "supportsTablet":  true,
+                             "bundleIdentifier":  "com.ron1nsyndicate.wallet",
+                             "infoPlist":  {
+                                               "NSFaceIDUsageDescription":  "Ron1n Syndicate uses Face ID to protect wallet actions, recovery access, and security confirmations."
+                                           }
+                         },
+                 "android":  {
+                                 "package":  "com.ron1nsyndicate.wallet",
+                                 "adaptiveIcon":  {
+                                                      "foregroundImage":  "./assets/icon.png",
+                                                      "backgroundColor":  "#000000"
+                                                  },
+                                 "permissions":  [
+                                                     "USE_BIOMETRIC",
+                                                     "USE_FINGERPRINT"
+                                                 ]
+                             },
+                 "plugins":  [
+                                 "expo-secure-store",
+                                 "expo-font",
+                                 "expo-local-authentication",
+                                 [
+                                     "expo-asset",
+                                     {
+                                         "assets":  [
+                                                        "./assets/icon.png",
+                                                        "./assets/rs-gold.png",
+                                                        "./assets/rs-graffiti.png",
+                                                        "./assets/ron1n.png"
+                                                    ]
+                                     }
+                                 ]
+                             ],
+                 "extra":  {
+                               "appBrand":  "Ron1n Syndicate",
+                               "walletUiTitle":  "SHOGUN WALLET"
+                           },
+                 "description":  "Ron1n Shogun Wallet - privacy-first self-custody cryptocurrency wallet with protected transactions, key rotation, biometric authorization, quantum-aware security, and auditable wallet controls.",
+                 "web":  {
+                             "bundler":  "metro",
+                             "output":  "single",
+                             "favicon":  "./assets/icon.png"
+                         }
+             }
 }

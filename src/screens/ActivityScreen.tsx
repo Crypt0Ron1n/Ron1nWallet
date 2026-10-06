@@ -1,7 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,33 +12,63 @@ import * as LocalAuthentication from 'expo-local-authentication';
 
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
+import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
+import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
+import Ron1nEmptyState from '../components/Ron1nEmptyState';
 import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
 import {
   ChainActivityCacheService,
   type CachedChainActivity,
 } from '../services/transactions/ChainActivityCacheService';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import {
+  TransactionLifecycleService,
+  type PersistedTransactionLifecycle,
+  type TransactionLifecycleState,
+} from '../services/transactions/TransactionLifecycleService';
+import { Ron1nColors, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
-type ActivityTab = 'PRIVATE' | 'CHAIN';
+type ActivityTab = 'PRIVATE' | 'CHAIN' | 'TRANSACTIONS';
+
+const LIFECYCLE_TONE: Record<TransactionLifecycleState, Ron1nStatusTone> = {
+  CREATED: 'neutral',
+  SIGNED: 'neutral',
+  BROADCASTING: 'info',
+  BROADCAST_ACCEPTED: 'info',
+  PENDING: 'info',
+  CONFIRMED: 'success',
+  FAILED: 'danger',
+  // UNKNOWN is deliberately NOT danger/FAILED - the provider simply could not
+  // locate the transaction yet. Warning communicates "unresolved", not "dead".
+  UNKNOWN: 'warning',
+  RECONCILE_REQUIRED: 'warning',
+};
 
 export default function ActivityScreen() {
   const [activeTab, setActiveTab] = useState<ActivityTab>('PRIVATE');
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [chainActivity, setChainActivity] = useState<Record<string, CachedChainActivity>>({});
+  const [lifecycleRecords, setLifecycleRecords] = useState<PersistedTransactionLifecycle[]>([]);
 
   const load = async () => {
     try {
-      const [localData, chainData] = await Promise.all([
+      const [localData, chainData, lifecycleData] = await Promise.all([
         ActivityService.getActivities(),
         ChainActivityCacheService.getCache(),
+        TransactionLifecycleService.listAll(),
       ]);
 
       setActivities(localData);
       setChainActivity(chainData);
+      setLifecycleRecords(
+        [...lifecycleData].sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+      );
     } catch (error) {
       console.error('Failed to load activity:', error);
       setActivities([]);
       setChainActivity({});
+      setLifecycleRecords([]);
     }
   };
 
@@ -150,7 +179,76 @@ export default function ActivityScreen() {
           CHAIN
         </Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => setActiveTab('TRANSACTIONS')}
+        style={[styles.tabButton, activeTab === 'TRANSACTIONS' && styles.activeTabButton]}
+      >
+        <Text style={[styles.tabText, activeTab === 'TRANSACTIONS' && styles.activeTabText]}>
+          SIGNED
+        </Text>
+      </TouchableOpacity>
     </View>
+  );
+
+  const renderTransactions = () => (
+    <>
+      <Ron1nCard>
+        <Text style={styles.sectionTitle}>SIGNED TRANSACTION LIFECYCLE</Text>
+        <Text style={styles.body}>
+          Every transaction Shogun has signed, from broadcast through reconciliation.
+          UNKNOWN means the network provider could not locate the transaction yet — it
+          is not the same as FAILED, and Shogun never treats it as failed.
+        </Text>
+      </Ron1nCard>
+
+      {lifecycleRecords.length === 0 ? (
+        <Ron1nCard>
+          <Ron1nEmptyState
+            icon="swap-vertical-outline"
+            title="NO SIGNED TRANSACTIONS YET"
+            message="Transactions will appear here once you send something from Shogun Wallet."
+          />
+        </Ron1nCard>
+      ) : (
+        <View style={styles.list}>
+          {lifecycleRecords.map((record) => (
+            <Ron1nCard key={record.transactionHash}>
+              <View style={styles.lifecycleHeader}>
+                <View>
+                  <Text style={styles.chainSymbol}>{record.asset}</Text>
+                  <Text style={styles.timestamp}>
+                    {new Date(record.updatedAt).toLocaleString()}
+                  </Text>
+                </View>
+
+                <Ron1nStatusBadge tone={LIFECYCLE_TONE[record.state]} label={record.state.replace(/_/g, ' ')} />
+              </View>
+
+              <View style={styles.lifecycleMetaRow}>
+                <Text style={styles.txMeta}>Amount: {record.amount} {record.asset}</Text>
+                {record.network ? <Text style={styles.txMeta}>Network: {record.network}</Text> : null}
+                {typeof record.nonce === 'number' ? (
+                  <Text style={styles.txMeta}>Nonce: {record.nonce}</Text>
+                ) : null}
+              </View>
+
+              <Text style={styles.txMeta} selectable>
+                To: {record.to}
+              </Text>
+
+              <Text style={styles.txHash} selectable>
+                {record.transactionHash}
+              </Text>
+
+              {record.lastError ? (
+                <Text style={styles.errorText}>{record.lastError}</Text>
+              ) : null}
+            </Ron1nCard>
+          ))}
+        </View>
+      )}
+    </>
   );
 
   const renderPrivateActivity = () => (
@@ -169,11 +267,11 @@ export default function ActivityScreen() {
 
       {activities.length === 0 ? (
         <Ron1nCard>
-          <Text style={styles.emptyTitle}>NO LOCAL ACTIVITY</Text>
-          <Text style={styles.body}>
-            Wallet actions, receive views, security scans, and manual sync events
-            will appear here.
-          </Text>
+          <Ron1nEmptyState
+            icon="document-text-outline"
+            title="NO LOCAL ACTIVITY"
+            message="Wallet actions, receive views, security scans, and manual sync events will appear here."
+          />
         </Ron1nCard>
       ) : (
         <View style={styles.list}>
@@ -216,11 +314,11 @@ export default function ActivityScreen() {
 
         {records.length === 0 ? (
           <Ron1nCard>
-            <Text style={styles.emptyTitle}>NO CHAIN ACTIVITY CACHED</Text>
-            <Text style={styles.body}>
-              Go to Wallet, enable Manual Sync, approve the privacy notice, and sync
-              public-chain balances/activity.
-            </Text>
+            <Ron1nEmptyState
+              icon="cloud-offline-outline"
+              title="NO CHAIN ACTIVITY CACHED"
+              message="Go to Wallet, enable Manual Sync, approve the privacy notice, and sync public-chain balances/activity."
+            />
           </Ron1nCard>
         ) : (
           <View style={styles.list}>
@@ -238,21 +336,7 @@ export default function ActivityScreen() {
                       </Text>
                     </View>
 
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        failed ? styles.failedBadge : styles.okBadge,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusBadgeText,
-                          failed ? styles.failedText : styles.okText,
-                        ]}
-                      >
-                        {record.status}
-                      </Text>
-                    </View>
+                    <Ron1nStatusBadge tone={failed ? 'danger' : 'success'} label={record.status} />
                   </View>
 
                   {failed ? (
@@ -281,12 +365,19 @@ export default function ActivityScreen() {
                         const direction = anyTx.direction || anyTx.type || 'ACTIVITY';
                         const amount = anyTx.amount || anyTx.value || '';
                         const date = anyTx.date || anyTx.timestamp || anyTx.createdAt;
+                        const counterparty = direction === 'OUT' ? anyTx.to : anyTx.from;
 
                         return (
                           <View key={`${record.symbol}-${hash}-${index}`} style={styles.txRow}>
                             <Text style={styles.txTitle}>{direction}</Text>
                             {amount ? <Text style={styles.txMeta}>Amount: {String(amount)}</Text> : null}
-                            <Text style={styles.txHash} numberOfLines={1}>
+                            {counterparty ? (
+                              <Text style={styles.txMeta} selectable>
+                                {direction === 'OUT' ? 'To: ' : 'From: '}
+                                {String(counterparty)}
+                              </Text>
+                            ) : null}
+                            <Text style={styles.txHash} selectable>
                               {String(hash)}
                             </Text>
                             {date ? (
@@ -317,15 +408,19 @@ export default function ActivityScreen() {
   return (
     <Ron1nScreen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
-          <Text style={styles.title}>ACTIVITY</Text>
-          <Text style={styles.subtitle}>PRIVATE + CHAIN LEDGER</Text>
-        </View>
+        <Ron1nScreenHeader
+          title="ACTIVITY"
+          subtitle="PRIVATE + CHAIN LEDGER"
+          accent="gold"
+        />
 
         {renderTabs()}
 
-        {activeTab === 'PRIVATE' ? renderPrivateActivity() : renderChainActivity()}
+        {activeTab === 'PRIVATE'
+          ? renderPrivateActivity()
+          : activeTab === 'CHAIN'
+            ? renderChainActivity()
+            : renderTransactions()}
       </ScrollView>
     </Ron1nScreen>
   );
@@ -334,29 +429,6 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 120,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 18,
-  },
-  logo: {
-    width: 108,
-    height: 108,
-    resizeMode: 'contain',
-    marginBottom: 10,
-  },
-  title: {
-    color: Ron1nColors.gold,
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: 3,
-  },
-  subtitle: {
-    color: Ron1nColors.green,
-    fontSize: 10,
-    letterSpacing: 3,
-    marginTop: 6,
   },
   tabRow: {
     flexDirection: 'row',
@@ -439,6 +511,15 @@ const styles = StyleSheet.create({
     color: '#777777',
     fontSize: 10,
     marginTop: 6,
+  },
+  lifecycleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Ron1nSpacing.sm,
+  },
+  lifecycleMetaRow: {
+    marginBottom: Ron1nSpacing.xs,
   },
   chainHeader: {
     flexDirection: 'row',

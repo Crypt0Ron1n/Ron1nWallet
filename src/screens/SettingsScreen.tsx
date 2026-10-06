@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Switch,
@@ -14,6 +13,7 @@ import * as Updates from 'expo-updates';
 
 import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
+import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
 import { ActivityService } from '../services/transactions/ActivityService';
 import { ChainActivityCacheService } from '../services/transactions/ChainActivityCacheService';
 import { AddressRotationPrepService } from '../services/security/AddressRotationPrepService';
@@ -21,9 +21,19 @@ import { PrivacyModeService } from '../services/PrivacyModeService';
 import { ScreenProtectionService } from '../services/ScreenProtectionService';
 import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import { VaultService } from '../services/VaultService';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import {
+  StartupPreferenceService,
+  type StartupDestination,
+} from '../services/StartupPreferenceService';
+import { Ron1nColors, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 type SettingsMode = 'settings' | 'recovery';
+
+const STARTUP_OPTIONS: { value: StartupDestination; label: string }[] = [
+  { value: 'SYNDICATE', label: 'Syndicate' },
+  { value: 'SHOGUN', label: 'Shogun Wallet' },
+  { value: 'SECURITY', label: 'Security' },
+];
 
 export default function SettingsScreen() {
   const [mode, setMode] = useState<SettingsMode>('settings');
@@ -35,6 +45,7 @@ export default function SettingsScreen() {
   const [chainCacheCount, setChainCacheCount] = useState(0);
   const [rotationPrepCount, setRotationPrepCount] = useState(0);
   const [activityCount, setActivityCount] = useState(0);
+  const [startupDestination, setStartupDestination] = useState<StartupDestination>('SYNDICATE');
 
   useEffect(() => {
     load();
@@ -49,6 +60,7 @@ export default function SettingsScreen() {
         chainCache,
         rotationRecords,
         activities,
+        startup,
       ] = await Promise.all([
         PrivacyModeService.isEnabled(),
         ScreenProtectionService.isEnabled(),
@@ -56,6 +68,7 @@ export default function SettingsScreen() {
         ChainActivityCacheService.getCache(),
         AddressRotationPrepService.getAll(),
         ActivityService.getActivities(),
+        StartupPreferenceService.getStartupDestination(),
       ]);
 
       setPrivacyMode(enabled);
@@ -64,6 +77,7 @@ export default function SettingsScreen() {
       setChainCacheCount(Object.keys(chainCache).length);
       setRotationPrepCount(rotationRecords.length);
       setActivityCount(activities.length);
+      setStartupDestination(startup);
     } catch (error) {
       console.error('Failed to load settings:', error);
       setPrivacyMode(true);
@@ -72,6 +86,18 @@ export default function SettingsScreen() {
       setChainCacheCount(0);
       setRotationPrepCount(0);
       setActivityCount(0);
+      setStartupDestination('SYNDICATE');
+    }
+  };
+
+  const selectStartupDestination = async (destination: StartupDestination) => {
+    setStartupDestination(destination);
+
+    try {
+      await StartupPreferenceService.setStartupDestination(destination);
+    } catch (error) {
+      Alert.alert('Error', 'Unable to save startup page preference.');
+      await load();
     }
   };
 
@@ -433,11 +459,11 @@ export default function SettingsScreen() {
     return (
       <Ron1nScreen>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
-            <Text style={styles.title}>RECOVERY BACKUP</Text>
-            <Text style={styles.subtitle}>BIOMETRIC PROTECTED</Text>
-          </View>
+          <Ron1nScreenHeader
+            title="RECOVERY BACKUP"
+            subtitle="BIOMETRIC PROTECTED"
+            accent="gold"
+          />
 
           <Ron1nCard>
             <Text style={styles.dangerTitle}>CRITICAL WARNING</Text>
@@ -497,11 +523,46 @@ export default function SettingsScreen() {
   const renderSettingsScreen = () => (
     <Ron1nScreen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
-          <Text style={styles.title}>SETTINGS</Text>
-          <Text style={styles.subtitle}>VAULT CONTROL CENTER</Text>
-        </View>
+        <Ron1nScreenHeader
+          title="SETTINGS"
+          subtitle="VAULT CONTROL CENTER"
+          accent="gold"
+        />
+
+        <CategoryLabel label="GENERAL" />
+
+        <Ron1nCard>
+          <Text style={styles.sectionTitle}>STARTUP PAGE</Text>
+          <Text style={styles.body}>
+            Choose which Ron1n Syndicate area opens after you unlock the app.
+          </Text>
+
+          <View style={styles.startupOptions}>
+            {STARTUP_OPTIONS.map((option) => {
+              const selected = option.value === startupDestination;
+
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.startupOption, selected && styles.startupOptionSelected]}
+                  onPress={() => void selectStartupDestination(option.value)}
+                  activeOpacity={0.85}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                >
+                  <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
+                    {selected ? <View style={styles.radioInner} /> : null}
+                  </View>
+                  <Text style={[styles.startupOptionText, selected && styles.startupOptionTextSelected]}>
+                    {option.label.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Ron1nCard>
+
+        <CategoryLabel label="PRIVACY" />
 
         <Ron1nCard>
           <View style={styles.settingRow}>
@@ -520,6 +581,8 @@ export default function SettingsScreen() {
             />
           </View>
         </Ron1nCard>
+
+        <CategoryLabel label="SECURITY" />
 
         <Ron1nCard>
           <View style={styles.settingRow}>
@@ -554,6 +617,8 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </Ron1nCard>
 
+        <CategoryLabel label="PRIVACY" />
+
         <Ron1nCard>
           <Text style={styles.sectionTitle}>LOCAL DATA CONTROLS</Text>
 
@@ -577,6 +642,8 @@ export default function SettingsScreen() {
             <Text style={styles.warningText}>CLEAR ALL NON-VAULT DATA</Text>
           </TouchableOpacity>
         </Ron1nCard>
+
+        <CategoryLabel label="ABOUT" />
 
         <Ron1nCard>
           <Text style={styles.sectionTitle}>APP ENVIRONMENT</Text>
@@ -614,6 +681,10 @@ export default function SettingsScreen() {
   return mode === 'recovery' ? renderRecoveryScreen() : renderSettingsScreen();
 }
 
+function CategoryLabel({ label }: { label: string }) {
+  return <Text style={styles.categoryLabel}>{label}</Text>;
+}
+
 function DataRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.dataRow}>
@@ -626,30 +697,6 @@ function DataRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 120,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 18,
-  },
-  logo: {
-    width: 108,
-    height: 108,
-    resizeMode: 'contain',
-    marginBottom: 10,
-  },
-  title: {
-    color: Ron1nColors.gold,
-    fontSize: 25,
-    fontWeight: '900',
-    letterSpacing: 3,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: Ron1nColors.green,
-    fontSize: 10,
-    letterSpacing: 3,
-    marginTop: 6,
   },
   settingRow: {
     flexDirection: 'row',
@@ -671,6 +718,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 2,
     marginBottom: 12,
+  },
+  categoryLabel: {
+    ...Ron1nTypography.label,
+    color: Ron1nColors.neonPurple,
+    marginBottom: Ron1nSpacing.sm,
+    marginTop: Ron1nSpacing.xs,
   },
   body: {
     color: '#CCCCCC',
@@ -842,5 +895,51 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'right',
     flex: 1,
+  },
+  startupOptions: {
+    marginTop: 14,
+    gap: 10,
+  },
+  startupOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  startupOptionSelected: {
+    borderColor: 'rgba(140,0,255,0.6)',
+    backgroundColor: 'rgba(140,0,255,0.14)',
+  },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#555560',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioOuterSelected: {
+    borderColor: Ron1nColors.neonPurple,
+  },
+  radioInner: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: Ron1nColors.neonPurple,
+  },
+  startupOptionText: {
+    color: '#BBBBBB',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  startupOptionTextSelected: {
+    color: Ron1nColors.white,
   },
 });

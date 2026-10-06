@@ -1,17 +1,18 @@
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
+import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
+import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
 import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
 import {
   ChainActivityCacheService,
@@ -28,7 +29,14 @@ import {
   type AddressRotationPrepRecord,
   type RotationPrepStatus,
 } from '../services/security/AddressRotationPrepService';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, type Ron1nStatusTone } from '../theme/ron1nTheme';
+
+const EXPOSURE_TONE: Record<ExposureLevel, Ron1nStatusTone> = {
+  FRESH: 'success',
+  LOW: 'info',
+  ELEVATED: 'danger',
+  UNKNOWN: 'neutral',
+};
 
 function calculateSecurityScore(report: PortfolioExposureReport | null): number {
   if (!report || report.totalAssetsScanned === 0) {
@@ -86,6 +94,7 @@ function rotationStatusColor(status: RotationPrepStatus) {
 }
 
 export default function SecurityScreen() {
+  const navigation = useNavigation<any>();
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [chainCache, setChainCache] = useState<Record<string, CachedChainActivity>>({});
   const [portfolioReport, setPortfolioReport] = useState<PortfolioExposureReport | null>(null);
@@ -251,15 +260,34 @@ export default function SecurityScreen() {
 
   const exposureReports = portfolioReport?.reports || [];
   const hasCache = Object.keys(chainCache).length > 0;
+  const preparedRotations = rotationRecords.filter((record) => record.status === 'PREPARED');
+  const needsAttention = portfolioReport?.overallLevel === 'ELEVATED' || preparedRotations.length > 0;
 
   return (
     <Ron1nScreen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
-          <Text style={styles.title}>SECURITY LAYER</Text>
-          <Text style={styles.subtitle}>EXPOSURE + ADDRESS HYGIENE</Text>
-        </View>
+        <Ron1nScreenHeader
+          title="SECURITY LAYER"
+          subtitle="EXPOSURE + ADDRESS HYGIENE"
+          accent="gold"
+        />
+
+        {needsAttention ? (
+          <Ron1nCard>
+            <View style={styles.attentionHeader}>
+              <Ron1nStatusBadge tone="warning" label="ATTENTION REQUIRED" />
+            </View>
+            <Text style={styles.cardText}>
+              {portfolioReport?.overallLevel === 'ELEVATED'
+                ? 'One or more assets have elevated public exposure. Review the exposure reports below.'
+                : null}
+              {portfolioReport?.overallLevel === 'ELEVATED' && preparedRotations.length > 0 ? '\n' : null}
+              {preparedRotations.length > 0
+                ? `${preparedRotations.length} fresh receive address${preparedRotations.length === 1 ? '' : 'es'} prepared and waiting on you to use or dismiss.`
+                : null}
+            </Text>
+          </Ron1nCard>
+        ) : null}
 
         <Ron1nCard>
           <Text style={styles.scoreLabel}>RON1N SECURITY SCORE</Text>
@@ -291,6 +319,25 @@ export default function SecurityScreen() {
             color={rotationRecords.length > 0 ? Ron1nColors.gold : Ron1nColors.gray}
           />
         </View>
+
+        <Ron1nCard>
+          <Text style={styles.cardTitle}>PRIVACY</Text>
+          <Text style={styles.cardText}>
+            Shogun's philosophy: your keys, your privacy, your decision. Review what
+            each chain actually exposes, what protection is really available, and
+            choose what happens to a received asset - nothing moves automatically.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => navigation.navigate('AssetProtection')}
+            accessibilityRole="button"
+            accessibilityLabel="Open asset protection"
+            accessibilityHint="Shows privacy assessment and identity options for your assets."
+          >
+            <Text style={styles.primaryButtonText}>ASSET PROTECTION</Text>
+          </TouchableOpacity>
+        </Ron1nCard>
 
         <Ron1nCard>
           <Text style={styles.cardTitle}>EXPOSURE SCANNER</Text>
@@ -435,7 +482,6 @@ function ExposureCard({
   report: AssetExposureReport;
   onPrepareRotation: (report: AssetExposureReport) => void;
 }) {
-  const color = exposureColor(report.exposureLevel);
   const showRotationButton =
     report.exposureLevel === 'LOW' || report.exposureLevel === 'ELEVATED';
 
@@ -451,9 +497,10 @@ function ExposureCard({
           ) : null}
         </View>
 
-        <Text style={[styles.exposureBadge, { color }]}>
-          {exposureStatusText(report.exposureLevel)}
-        </Text>
+        <Ron1nStatusBadge
+          tone={EXPOSURE_TONE[report.exposureLevel]}
+          label={exposureStatusText(report.exposureLevel)}
+        />
       </View>
 
       <Text style={styles.cardText}>{report.headline}</Text>
@@ -512,9 +559,10 @@ function RotationPrepCard({
           <Text style={styles.rotationLabel}>{record.recommendedLabel}</Text>
         </View>
 
-        <Text style={[styles.rotationStatus, { color: rotationStatusColor(record.status) }]}>
-          {record.status}
-        </Text>
+        <Ron1nStatusBadge
+          tone={record.status === 'PREPARED' ? 'warning' : record.status === 'COMPLETED' ? 'success' : 'neutral'}
+          label={record.status}
+        />
       </View>
 
       <Text style={styles.rotationReason}>{record.reason}</Text>
@@ -575,37 +623,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 120,
   },
-  hero: {
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  logo: {
-    width: 118,
-    height: 118,
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  title: {
-    color: Ron1nColors.gold,
-    fontSize: 23,
-    fontWeight: '900',
-    letterSpacing: 3,
-    fontFamily: 'KatakanaStyle',
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: Ron1nColors.gray,
-    fontSize: 11,
-    marginTop: 6,
-    fontFamily: 'KatakanaStyle',
-    textAlign: 'center',
-    letterSpacing: 2,
+  attentionHeader: {
+    marginBottom: 10,
   },
   scoreLabel: {
     color: Ron1nColors.gray,
     fontSize: 10,
-    fontFamily: 'KatakanaStyle',
     textAlign: 'center',
   },
   scoreRow: {
@@ -629,7 +652,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.gold,
     textAlign: 'center',
     fontSize: 11,
-    fontFamily: 'KatakanaStyle',
     letterSpacing: 2,
   },
   scoreDetail: {
@@ -656,18 +678,15 @@ const styles = StyleSheet.create({
   tileTitle: {
     color: Ron1nColors.gray,
     fontSize: 9,
-    fontFamily: 'KatakanaStyle',
   },
   tileStatus: {
     fontSize: 11,
     marginTop: 8,
-    fontFamily: 'KatakanaStyle',
   },
   cardTitle: {
     color: Ron1nColors.white,
     fontSize: 13,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
     letterSpacing: 1,
   },
   cardText: {
@@ -693,7 +712,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 11,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   metricRow: {
     flexDirection: 'row',
@@ -730,12 +748,10 @@ const styles = StyleSheet.create({
     color: Ron1nColors.white,
     fontSize: 18,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   exposureBadge: {
     fontSize: 10,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
     textAlign: 'right',
     maxWidth: 145,
   },
@@ -782,7 +798,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.gold,
     fontSize: 10,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
     letterSpacing: 1,
   },
   freshNote: {
@@ -807,7 +822,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.red,
     fontSize: 11,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   emptyPrep: {
     color: Ron1nColors.gray,
@@ -838,7 +852,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.gold,
     fontSize: 16,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   rotationLabel: {
     color: Ron1nColors.green,
@@ -849,7 +862,6 @@ const styles = StyleSheet.create({
   rotationStatus: {
     fontSize: 10,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   rotationReason: {
     color: '#CCCCCC',
@@ -899,7 +911,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.gold,
     fontSize: 11,
     marginTop: 14,
-    fontFamily: 'KatakanaStyle',
   },
   historyHeader: {
     marginTop: 10,
@@ -908,7 +919,6 @@ const styles = StyleSheet.create({
     color: Ron1nColors.white,
     fontSize: 14,
     fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
   },
   empty: {
     color: Ron1nColors.gray,
@@ -925,7 +935,6 @@ const styles = StyleSheet.create({
   activityTitle: {
     color: Ron1nColors.green,
     fontSize: 12,
-    fontFamily: 'KatakanaStyle',
   },
   activityDetail: {
     color: '#AAAAAA',

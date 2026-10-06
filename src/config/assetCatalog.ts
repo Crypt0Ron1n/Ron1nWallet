@@ -74,8 +74,8 @@ export const RON1N_ASSETS: Ron1nAssetConfig[] = [
     supportsBalance: true,
     supportsHistory: false,
     supportsExposureScan: true,
-    supportsBroadcast: false,
-    securityLabel: 'EVM security layer ready',
+    supportsBroadcast: true,
+    securityLabel: 'EVM signing validated; broadcast remains explicit',
   },
   {
     symbol: 'SOL',
@@ -287,3 +287,4 @@ export function getAssetConfig(symbol: string) {
 export function getAssetsByCategory(category: Ron1nAssetCategory) {
   return RON1N_ASSETS.filter((asset) => asset.category === category);
 }
+

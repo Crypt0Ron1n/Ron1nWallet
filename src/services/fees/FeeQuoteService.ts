@@ -12,7 +12,8 @@ function toNumber(value: string) {
 }
 
 function toUsd(value: number) {
-  return value.toFixed(2);
+  if (value === 0) return '0';
+  return value.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
 }
 
 export class FeeQuoteService {
@@ -33,7 +34,7 @@ export class FeeQuoteService {
         totalRequiredUsd: toUsd(totalRequired),
         shogunFeeUsd: '0.00',
         ron1nFeeUsd: '0.00',
-        warning: `To deliver $${toUsd(amount)}, your wallet must also cover the estimated network fee.`,
+        warning: `To deliver ${toUsd(amount)} ${input.asset}, your wallet must also cover the estimated network fee of ${toUsd(fee)} ${input.asset}.`,
         feeDisclosure:
           'Network fees are required by the selected blockchain network. Shogun Wallet does not create, control, or receive this fee.',
       };
@@ -51,7 +52,7 @@ export class FeeQuoteService {
       totalRequiredUsd: toUsd(amount),
       shogunFeeUsd: '0.00',
       ron1nFeeUsd: '0.00',
-      warning: `Because the fee is deducted from the total spend, the recipient may receive approximately $${toUsd(recipientReceives)}.`,
+      warning: `Because the fee is deducted from the total spend, the recipient may receive approximately ${toUsd(recipientReceives)} ${input.asset}.`,
       feeDisclosure:
         'Network fees are required by the selected blockchain network. Shogun Wallet does not create, control, or receive this fee.',
     };

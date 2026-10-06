@@ -1,192 +1,158 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
-import { getAssetsByCategory } from '../config/assetCatalog';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
+import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
+import {
+  getAssetsByCategory,
+  type Ron1nAssetCategory,
+  type Ron1nAssetConfig,
+} from '../config/assetCatalog';
+import { Ron1nColors, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+
+const GROUPS: { category: Ron1nAssetCategory; title: string; caption: string }[] = [
+  { category: 'Native', title: 'NATIVE WALLETS', caption: 'Each has its own address and key derivation.' },
+  { category: 'EVM', title: 'EVM NETWORKS', caption: 'Share your Ethereum address across EVM chains.' },
+  { category: 'Token', title: 'TOKENS', caption: 'Display/send-review architecture only — Ron1n does not issue, wrap, or custody these.' },
+  { category: 'Future', title: 'FUTURE NATIVE SUPPORT', caption: 'Architecture reserved — integration required before these go live.' },
+];
+
+function AssetRow({ asset }: { asset: Ron1nAssetConfig }) {
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowMain}>
+        <Text style={styles.symbol}>{asset.symbol}</Text>
+        <Text style={styles.name}>{asset.name}</Text>
+        {asset.securityLabel ? <Text style={styles.securityLabel}>{asset.securityLabel}</Text> : null}
+      </View>
+
+      <View style={styles.badgeColumn}>
+        {!asset.enabledInWallet ? (
+          <Ron1nStatusBadge tone="neutral" label="NOT YET AVAILABLE" />
+        ) : asset.supportsBroadcast ? (
+          <Ron1nStatusBadge tone="success" label="SEND READY" />
+        ) : (
+          <Ron1nStatusBadge tone="info" label="RECEIVE ONLY" />
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function AssetsScreen() {
-  const nativeAssets = getAssetsByCategory('Native');
-  const evmNetworks = getAssetsByCategory('EVM');
-  const tokens = getAssetsByCategory('Token');
-  const futureAssets = getAssetsByCategory('Future');
-
   return (
     <Ron1nScreen>
       <SafeAreaView>
-        <View style={styles.hero}>
-          <Image source={require('../../assets/rs-gold.png')} style={styles.logo} />
-          <Text style={styles.title}>ASSET LAYER</Text>
-          <Text style={styles.subtitle}>
-            Your assets remain yours. Ron1n adds security visibility.
-          </Text>
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <Ron1nScreenHeader
+            title="ASSET LAYER"
+            subtitle="Your assets remain yours — Ron1n adds security visibility"
+            accent="gold"
+          />
 
-        <Ron1nCard>
-          <Text style={styles.cardTitle}>NATIVE WALLETS</Text>
-          <View style={styles.grid}>
-            {nativeAssets.map((asset) => (
-              <View key={asset.symbol} style={styles.assetPill}>
-                <Text style={styles.assetText}>{asset.symbol}</Text>
-              </View>
-            ))}
-          </View>
-        </Ron1nCard>
+          {GROUPS.map((group) => {
+            const assets = getAssetsByCategory(group.category);
+            if (assets.length === 0) return null;
 
-        <Ron1nCard>
-          <Text style={styles.cardTitle}>EVM NETWORKS</Text>
-          <View style={styles.grid}>
-            {evmNetworks.map((network) => (
-              <View key={network.symbol} style={styles.networkPill}>
-                <Text style={styles.networkText}>{network.name}</Text>
-              </View>
-            ))}
-          </View>
-        </Ron1nCard>
+            return (
+              <Ron1nCard key={group.category}>
+                <Text style={styles.cardTitle}>{group.title}</Text>
+                <Text style={styles.cardCaption}>{group.caption}</Text>
 
-        <Ron1nCard>
-          <Text style={styles.cardTitle}>TOKENS</Text>
-          <Text style={styles.cardText}>
-            Token support is display/send-review architecture only. Ron1n does not
-            issue, wrap, custody, or synthesize user assets.
-          </Text>
+                <View style={styles.list}>
+                  {assets.map((asset) => (
+                    <AssetRow key={asset.symbol} asset={asset} />
+                  ))}
+                </View>
+              </Ron1nCard>
+            );
+          })}
 
-          <View style={styles.grid}>
-            {tokens.map((token) => (
-              <View key={token.symbol} style={styles.tokenPill}>
-                <Text style={styles.tokenText}>{token.symbol}</Text>
-              </View>
-            ))}
-          </View>
-        </Ron1nCard>
+          <Ron1nCard>
+            <Text style={styles.cardTitle}>WHAT THESE LABELS MEAN</Text>
 
-        <Ron1nCard>
-          <Text style={styles.cardTitle}>FUTURE NATIVE SUPPORT</Text>
-          <View style={styles.grid}>
-            {futureAssets.map((asset) => (
-              <View key={asset.symbol} style={styles.futurePill}>
-                <Text style={styles.futureText}>{asset.symbol}</Text>
-              </View>
-            ))}
-          </View>
-        </Ron1nCard>
+            <View style={styles.legendRow}>
+              <Ron1nStatusBadge tone="success" label="SEND READY" />
+              <Text style={styles.legendText}>Balance, history, and broadcast are wired through the full security pipeline.</Text>
+            </View>
 
-        <Ron1nCard>
-          <Text style={styles.cardTitle}>SECURITY STATES</Text>
-          <Text style={styles.green}>● Protected — address hygiene complete</Text>
-          <Text style={styles.blue}>● Quantum Ready — monitored and vault-secured</Text>
-          <Text style={styles.purple}>● Vault Secured — keys protected locally</Text>
-          <Text style={styles.red}>● Rotation Recommended — exposure detected</Text>
-        </Ron1nCard>
+            <View style={styles.legendRow}>
+              <Ron1nStatusBadge tone="info" label="RECEIVE ONLY" />
+              <Text style={styles.legendText}>Receive, balance, and exposure visibility work. Outbound send is not enabled yet.</Text>
+            </View>
+
+            <View style={styles.legendRow}>
+              <Ron1nStatusBadge tone="neutral" label="NOT YET AVAILABLE" />
+              <Text style={styles.legendText}>Display architecture only. No live balance, send, or receive yet.</Text>
+            </View>
+          </Ron1nCard>
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
       </SafeAreaView>
     </Ron1nScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 22,
-  },
-  logo: {
-    width: 118,
-    height: 118,
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  title: {
-    color: Ron1nColors.gold,
-    fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: 3,
-    fontFamily: 'KatakanaStyle',
-  },
-  subtitle: {
-    color: Ron1nColors.gray,
-    fontSize: 11,
-    marginTop: 8,
-    textAlign: 'center',
-    fontFamily: 'KatakanaStyle',
-  },
   cardTitle: {
+    ...Ron1nTypography.cardTitle,
     color: Ron1nColors.white,
-    fontSize: 14,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
-    marginBottom: 12,
+    marginBottom: Ron1nSpacing.xs,
   },
-  cardText: {
-    color: '#AAAAAA',
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 14,
+  cardCaption: {
+    ...Ron1nTypography.bodySecondary,
+    color: Ron1nColors.muted,
+    marginBottom: Ron1nSpacing.md,
   },
-  grid: {
+  list: {
+    gap: Ron1nSpacing.sm,
+  },
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Ron1nSpacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C22',
   },
-  assetPill: {
-    borderWidth: 1,
-    borderColor: '#00FF4155',
-    backgroundColor: '#00FF4112',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  rowMain: {
+    flex: 1,
+    paddingRight: Ron1nSpacing.sm,
   },
-  assetText: {
+  symbol: {
+    ...Ron1nTypography.cardTitle,
+    fontSize: 14,
+    color: Ron1nColors.white,
+  },
+  name: {
+    ...Ron1nTypography.caption,
+    color: Ron1nColors.gray,
+    marginTop: 2,
+  },
+  securityLabel: {
+    ...Ron1nTypography.caption,
     color: Ron1nColors.green,
-    fontSize: 10,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
+    marginTop: 4,
   },
-  networkPill: {
-    borderWidth: 1,
-    borderColor: '#00D4FF55',
-    backgroundColor: '#00D4FF12',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  badgeColumn: {
+    alignItems: 'flex-end',
   },
-  networkText: {
-    color: Ron1nColors.blue,
-    fontSize: 10,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Ron1nSpacing.sm,
+    marginTop: Ron1nSpacing.sm,
   },
-  tokenPill: {
-    borderWidth: 1,
-    borderColor: '#B026FF55',
-    backgroundColor: '#B026FF12',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  legendText: {
+    ...Ron1nTypography.caption,
+    color: Ron1nColors.muted,
+    flex: 1,
   },
-  tokenText: {
-    color: Ron1nColors.purple,
-    fontSize: 10,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
+  bottomSpace: {
+    height: 110,
   },
-  futurePill: {
-    borderWidth: 1,
-    borderColor: '#FFD70055',
-    backgroundColor: '#FFD70012',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  futureText: {
-    color: Ron1nColors.gold,
-    fontSize: 10,
-    fontWeight: '900',
-    fontFamily: 'KatakanaStyle',
-  },
-  green: { color: Ron1nColors.green, marginTop: 8, fontSize: 12 },
-  blue: { color: Ron1nColors.blue, marginTop: 8, fontSize: 12 },
-  purple: { color: Ron1nColors.purple, marginTop: 8, fontSize: 12 },
-  red: { color: Ron1nColors.red, marginTop: 8, fontSize: 12 },
 });
