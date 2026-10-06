@@ -5,6 +5,20 @@ import type { SignedPayload } from '../crypto/types';
 import type { BroadcastReconciliation } from './types';
 import { BaseMockProvider } from './BaseMockProvider';
 
+const ERC20_TRANSFER_SELECTOR = ethers.id('transfer(address,uint256)').slice(0, 10);
+
+/**
+ * Basis-points safety margin applied on top of the node's own eth_estimateGas
+ * result for ERC-20 transfers. eth_estimateGas can under-estimate transfers
+ * that touch cold storage slots (e.g. the recipient's first-ever balance
+ * entry for this token), which would otherwise risk an out-of-gas revert
+ * after the user has already authorized and signed. This is the single,
+ * explicit source for that margin - never scattered as inline multipliers,
+ * and never a substitute for the real estimate itself.
+ */
+const ERC20_GAS_ESTIMATE_BUFFER_BPS = 2000; // 20%
+const BPS_DENOMINATOR = 10000n;
+
 const RPC_URLS: Record<string, string> = {
   ETH: 'https://ethereum.publicnode.com',
   AVAX: 'https://api.avax.network/ext/bc/C/rpc',
@@ -370,7 +384,7 @@ export class EvmProvider extends BaseMockProvider {
 
   private async rpcCall(method: string, params: unknown[]): Promise<any> {
     if (!this.rpcUrl) {
-      throw new Error(`${this.chain} reconciliation blocked: RPC endpoint unavailable`);
+      throw new Error(`${this.chain} RPC call blocked: endpoint unavailable`);
     }
 
     const response = await fetch(this.rpcUrl, {
@@ -456,6 +470,115 @@ export class EvmProvider extends BaseMockProvider {
     }
 
     return { transactionHash, status: 'UNKNOWN', observedAt };
+  }
+
+  /**
+   * Single authoritative ERC-20 transfer(address,uint256) calldata encoder.
+   * The exact same calldata produced here must be used for both gas
+   * estimation and final transaction construction - never encoded twice
+   * independently, so preview and signing can never diverge.
+   */
+  static encodeErc20Transfer(to: string, amountBaseUnits: bigint): string {
+    if (!ethers.isAddress(to)) {
+      throw new Error('ERC-20 transfer encoding blocked: invalid recipient address.');
+    }
+
+    if (amountBaseUnits < 0n) {
+      throw new Error('ERC-20 transfer encoding blocked: amount must not be negative.');
+    }
+
+    const encoded = ethers.AbiCoder.defaultAbiCoder().encode(['address', 'uint256'], [to, amountBaseUnits]);
+    return `${ERC20_TRANSFER_SELECTOR}${encoded.slice(2)}`;
+  }
+
+  /**
+   * Raw current gas price. Deliberately independent of estimateFee()'s
+   * native-transfer assumption - used by the ERC-20 fee-preview path so
+   * preview and construction share the exact same gas-limit estimate while
+   * still pricing it at the current network gas price. Does not touch or
+   * change estimateFee()'s existing native behavior.
+   */
+  async getGasPriceWei(): Promise<bigint> {
+    const result = await this.rpcCall('eth_gasPrice', []);
+
+    if (typeof result !== 'string' || !/^0x[0-9a-fA-F]+$/.test(result)) {
+      throw new Error(`${this.chain} gas price RPC returned an invalid quantity`);
+    }
+
+    const gasPriceWei = BigInt(result);
+
+    if (gasPriceWei <= 0n) {
+      throw new Error(`${this.chain} gas price RPC returned a non-positive value`);
+    }
+
+    return gasPriceWei;
+  }
+
+  /**
+   * Real eth_estimateGas for an ERC-20 transfer, simulated against the exact
+   * transaction that will eventually be signed: { from, to: tokenContract,
+   * value: 0, data }. `from` must be the account that will actually sign -
+   * callers are responsible for passing the active SPEND identity, never an
+   * INGRESS/VAULT address or arbitrary input; this method does not and
+   * cannot verify identity purpose, only chain state.
+   *
+   * Fails closed on every malformed/unexpected RPC outcome. Never falls back
+   * to a fixed, cached, or native-transfer gas limit.
+   */
+  async estimateErc20TransferGas(from: string, tokenContract: string, data: string): Promise<bigint> {
+    if (!this.rpcUrl) {
+      throw new Error(`${this.chain} gas estimation blocked: RPC endpoint unavailable`);
+    }
+
+    if (!ethers.isAddress(from)) {
+      throw new Error(`${this.chain} gas estimation blocked: invalid sender address`);
+    }
+
+    if (!ethers.isAddress(tokenContract)) {
+      throw new Error(`${this.chain} gas estimation blocked: invalid token contract address`);
+    }
+
+    if (!/^0x[0-9a-fA-F]+$/.test(data) || data.length < 10) {
+      throw new Error(`${this.chain} gas estimation blocked: malformed calldata`);
+    }
+
+    if (!data.toLowerCase().startsWith(ERC20_TRANSFER_SELECTOR.toLowerCase())) {
+      throw new Error(`${this.chain} gas estimation blocked: calldata is not an ERC-20 transfer`);
+    }
+
+    const result = await this.rpcCall('eth_estimateGas', [
+      { from, to: tokenContract, value: '0x0', data },
+    ]);
+
+    if (typeof result !== 'string' || !/^0x[0-9a-fA-F]+$/.test(result)) {
+      throw new Error(`${this.chain} gas estimation failed: RPC returned an invalid gas quantity`);
+    }
+
+    let estimated: bigint;
+
+    try {
+      estimated = BigInt(result);
+    } catch {
+      throw new Error(`${this.chain} gas estimation failed: gas quantity could not be parsed`);
+    }
+
+    if (estimated <= 0n) {
+      throw new Error(`${this.chain} gas estimation failed: RPC returned a non-positive gas estimate`);
+    }
+
+    if (estimated > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error(`${this.chain} gas estimation failed: gas estimate is implausibly large`);
+    }
+
+    // Integer-safe ceiling buffer: ceil(estimated * (10000 + BPS) / 10000).
+    const bufferedNumerator = estimated * (BPS_DENOMINATOR + BigInt(ERC20_GAS_ESTIMATE_BUFFER_BPS));
+    const buffered = (bufferedNumerator + BPS_DENOMINATOR - 1n) / BPS_DENOMINATOR;
+
+    if (buffered <= 0n) {
+      throw new Error(`${this.chain} gas estimation failed: buffered gas limit is invalid`);
+    }
+
+    return buffered;
   }
 
   /**

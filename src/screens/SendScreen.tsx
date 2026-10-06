@@ -17,11 +17,13 @@ import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
 import Ron1nButton from '../components/Ron1nButton';
 import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
 import KeyRotationModal from '../components/KeyRotationModal';
-import { SEND_REVIEW_ASSETS, Ron1nAssetConfig } from '../config/assetCatalog';
+import { SEND_REVIEW_ASSETS, Ron1nAssetConfig, resolveNetworkIdentifier } from '../config/assetCatalog';
 import { ActivityService } from '../services/transactions/ActivityService';
 import { FeeQuoteService } from '../services/fees/FeeQuoteService';
 import { FeeQuote, SendMode } from '../services/fees/types';
 import { ProviderFactory } from '../services/providers/ProviderFactory';
+import { EvmProvider } from '../services/providers/EvmProvider';
+import { AssetAmountService } from '../services/assets/AssetAmountService';
 import { TransactionSecurityGateService } from '../services/transactions/TransactionSecurityGateService';
 import { TransactionConstructionService } from '../services/transactions/TransactionConstructionService';
 import { SigningAuthorizationService } from '../services/crypto/SigningAuthorizationService';
@@ -106,7 +108,7 @@ export default function SendScreen() {
 
     return FeeQuoteService.createQuote({
       asset: asset.symbol,
-      network: asset.name,
+      network: resolveNetworkIdentifier(asset),
       amountUsd: amountAsset,
       estimatedFeeUsd,
       sendMode,
@@ -188,7 +190,7 @@ export default function SendScreen() {
       const gate = await TransactionSecurityGateService.evaluate({
         accountId: 'primary',
         assetSymbol: asset.symbol,
-        network: asset.name,
+        network: resolveNetworkIdentifier(asset),
         from: currentAddress,
         to: recipient,
         amount: normalizedAmount,
@@ -202,13 +204,46 @@ export default function SendScreen() {
       const provider = ProviderFactory.getProvider(asset.symbol);
       const status = gate.providerStatus;
 
-      const feeWei = await provider.estimateFee({
-        chain: status.chain,
-        asset: asset.symbol,
-        from: gate.intent.from,
-        to: recipient,
-        amount: normalizedAmount,
-      });
+      let feeWei: bigint;
+
+      if (gate.intent.amountUnit === 'TOKEN') {
+        // Token fee preview must reflect the real transfer being built, not
+        // the native 21,000-gas assumption. This calls the exact same
+        // encoder/estimator ChainAdapterFactory uses for construction, so
+        // preview and signing can never disagree on gas limit. If estimation
+        // fails here, the preview fails closed rather than showing a
+        // misleading fixed value.
+        if (
+          !(provider instanceof EvmProvider) ||
+          !gate.intent.asset.tokenContract ||
+          gate.intent.asset.decimals === undefined
+        ) {
+          throw new Error(
+            `${asset.symbol} fee preview blocked: token contract or decimals are unresolved.`
+          );
+        }
+
+        const tokenAmountBaseUnits = AssetAmountService.decimalToBaseUnits(
+          normalizedAmount,
+          gate.intent.asset.decimals
+        );
+        const data = EvmProvider.encodeErc20Transfer(recipient, tokenAmountBaseUnits);
+
+        const [gasLimit, gasPriceWei] = await Promise.all([
+          provider.estimateErc20TransferGas(gate.intent.from, gate.intent.asset.tokenContract, data),
+          provider.getGasPriceWei(),
+        ]);
+
+        feeWei = gasLimit * gasPriceWei;
+      } else {
+        feeWei = await provider.estimateFee({
+          chain: status.chain,
+          asset: asset.symbol,
+          from: gate.intent.from,
+          to: recipient,
+          amount: normalizedAmount,
+        });
+      }
 
       const liveFeeEth = ethers.formatEther(feeWei);
       setNetworkFeeEth(liveFeeEth);
@@ -216,7 +251,7 @@ export default function SendScreen() {
 
       const quote = FeeQuoteService.createQuote({
         asset: asset.symbol,
-        network: asset.name,
+        network: resolveNetworkIdentifier(asset),
         amountUsd: normalizedAmount,
         estimatedFeeUsd: liveFeeEth,
         sendMode,

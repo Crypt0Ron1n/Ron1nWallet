@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
     ...Ron1nTypography.body,
     fontWeight: '800',
     color: Ron1nColors.white,
+    flexShrink: 0,
   },
   rowSubLabel: {
     ...Ron1nTypography.caption,

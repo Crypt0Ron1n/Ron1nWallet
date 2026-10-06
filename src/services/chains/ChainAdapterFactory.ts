@@ -8,6 +8,8 @@ import type { TransactionIntent } from '../transactions/TransactionIntent';
 import type { NetworkState } from '../network/types';
 import { AssetAmountService } from '../assets/AssetAmountService';
 import { litecoinNetwork } from '../crypto/litecoinNetwork';
+import { ProviderFactory } from '../providers/ProviderFactory';
+import { EvmProvider } from '../providers/EvmProvider';
 import type { ChainAdapter, ChainAdapterContext, UnsignedTransactionDraft } from './types';
 
 function utxoNetwork(chain: 'BITCOIN' | 'LITECOIN') {
@@ -39,8 +41,19 @@ const evm:ChainAdapter={chain:'EVM',validateRecipient:v=>ethers.isAddress(v),asy
  if(intent.amountUnit==='TOKEN'){
   if(!intent.asset.tokenContract||intent.asset.decimals===undefined)throw new Error('EVM token construction blocked: token contract and decimals are unresolved.');
   const amount=AssetAmountService.decimalToBaseUnits(intent.amount,intent.asset.decimals);
-  const encoded=ethers.AbiCoder.defaultAbiCoder().encode(['address','uint256'],[intent.to,amount]);
-  return createDraft(intent,'EVM_ERC20_TRANSFER',{type:'legacy',chainId:requireField(networkState.chainId,'chainId','EVM'),nonce:requireField(networkState.nonce,'nonce','EVM'),to:intent.asset.tokenContract,value:'0',gasLimit:'TOKEN_GAS_LIMIT_REQUIRED',gasPrice:requireField(networkState.gasPriceBaseUnits,'gasPriceBaseUnits','EVM'),data:`${ethers.id('transfer(address,uint256)').slice(0,10)}${encoded.slice(2)}`,tokenContract:intent.asset.tokenContract,tokenAmountBaseUnits:amount.toString(),recipient:intent.to});
+  const data=EvmProvider.encodeErc20Transfer(intent.to,amount);
+
+  // Real eth_estimateGas against the exact transfer being constructed - the
+  // same `data` produced above is what gets signed, never re-encoded.
+  // `intent.from` is the address the rest of the pipeline already treats as
+  // the signer (and that ProtectBeforeSendService verifies is an active
+  // SPEND identity before authorization is ever granted); estimation reuses
+  // it as-is rather than re-deriving or trusting a different address.
+  const provider=ProviderFactory.getProvider(intent.asset.symbol);
+  if(!(provider instanceof EvmProvider))throw new Error('EVM token construction blocked: no EVM provider is configured for this token.');
+  const gasLimit=await provider.estimateErc20TransferGas(intent.from,intent.asset.tokenContract,data);
+
+  return createDraft(intent,'EVM_ERC20_TRANSFER',{type:'legacy',chainId:requireField(networkState.chainId,'chainId','EVM'),nonce:requireField(networkState.nonce,'nonce','EVM'),to:intent.asset.tokenContract,value:'0',gasLimit:gasLimit.toString(),gasPrice:requireField(networkState.gasPriceBaseUnits,'gasPriceBaseUnits','EVM'),data,tokenContract:intent.asset.tokenContract,tokenAmountBaseUnits:amount.toString(),recipient:intent.to});
  }
  const amount=AssetAmountService.decimalToBaseUnits(intent.amount,intent.asset.decimals??18);
  return createDraft(intent,'EVM_TRANSFER',{type:'legacy',chainId:requireField(networkState.chainId,'chainId','EVM'),nonce:requireField(networkState.nonce,'nonce','EVM'),to:intent.to,value:amount.toString(),gasLimit:'21000',gasPrice:requireField(networkState.gasPriceBaseUnits,'gasPriceBaseUnits','EVM'),data:'0x'});

@@ -14,6 +14,7 @@ import {
   type TransactionIntentAsset,
   type TransactionIntentValidationResult,
 } from './TransactionIntent';
+import { getTokenMetadata } from '../../config/tokenMetadata';
 
 export type TransactionSecurityGateRequest = {
   accountId: string;
@@ -117,6 +118,35 @@ function buildIntentAsset(
   const chain = supportedChainForSymbol(symbol) ?? 'EVM';
   const isToken = catalogAsset?.family === 'TOKEN';
 
+  if (isToken) {
+    // Token metadata is trusted and static only - never accepted from the
+    // UI/request, never derived from user input. A TOKEN-family asset with
+    // no registry entry must fail closed here rather than proceed with an
+    // unresolved contract address.
+    const metadata = getTokenMetadata(symbol);
+
+    if (!metadata) {
+      throw new Error(
+        `Transaction blocked: ${symbol} has no trusted token metadata registered. Token sends are only enabled for assets with verified contract metadata.`
+      );
+    }
+
+    return {
+      symbol,
+      chain,
+      network: request.network.trim(),
+
+      ...(request.chainId !== undefined
+        ? { chainId: request.chainId }
+        : catalogAsset?.chainId !== undefined
+          ? { chainId: catalogAsset.chainId }
+          : {}),
+
+      tokenContract: metadata.tokenContract,
+      decimals: metadata.decimals,
+    };
+  }
+
   return {
     symbol,
     chain,
@@ -128,15 +158,13 @@ function buildIntentAsset(
         ? { chainId: catalogAsset.chainId }
         : {}),
 
-    ...(!isToken
-      ? (() => {
-          const decimals = nativeDecimalsForSymbol(symbol);
+    ...(() => {
+      const decimals = nativeDecimalsForSymbol(symbol);
 
-          return decimals !== undefined
-            ? { decimals }
-            : {};
-        })()
-      : {}),
+      return decimals !== undefined
+        ? { decimals }
+        : {};
+    })(),
   };
 }
 

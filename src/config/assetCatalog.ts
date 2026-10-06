@@ -288,3 +288,38 @@ export function getAssetsByCategory(category: Ron1nAssetCategory) {
   return RON1N_ASSETS.filter((asset) => asset.category === category);
 }
 
+/**
+ * Resolves the blockchain network identifier NetworkStateService/
+ * ChainAdapterFactory need to look up RPC/chain state - this is distinct
+ * from the asset's human-readable display name.
+ *
+ * For native/EVM-family assets (ETH, AVAX, CRO, ...), the display name
+ * already doubles as a network name NetworkStateService recognizes (e.g.
+ * "Ethereum", "Avalanche C-Chain"), so it is reused as-is - this preserves
+ * exactly the current, working behavior for every non-token asset.
+ *
+ * For TOKEN-family assets (LINK, USDC, USDG, ...), the display name is the
+ * token's own name ("Chainlink", "USD Coin"), not a network - using it as a
+ * network identifier silently fails to resolve any chain/RPC state. The
+ * asset's own `baseChainSymbol` (e.g. 'ETH') is the correct, already-existing
+ * field for this; NetworkStateService.resolveEvm falls through to using an
+ * unrecognized-but-already-a-symbol string directly, so passing the raw
+ * chain symbol resolves correctly without inventing a second taxonomy.
+ *
+ * Fails closed (throws) rather than guessing or defaulting to Ethereum when
+ * a token asset has no registered base chain.
+ */
+export function resolveNetworkIdentifier(asset: Ron1nAssetConfig): string {
+  if (asset.category !== 'Token') {
+    return asset.name;
+  }
+
+  if (!asset.baseChainSymbol) {
+    throw new Error(
+      `${asset.symbol} has no resolvable blockchain network. Token sends require a registered base chain.`
+    );
+  }
+
+  return asset.baseChainSymbol;
+}
+
