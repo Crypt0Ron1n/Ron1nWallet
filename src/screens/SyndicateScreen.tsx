@@ -11,16 +11,19 @@ import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
 import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
 import Ron1nEmptyState from '../components/Ron1nEmptyState';
 import Ron1nButton from '../components/Ron1nButton';
+import Ron1nSparkline from '../components/Ron1nSparkline';
 import { VaultService } from '../services/VaultService';
 import { PrivacyModeService } from '../services/PrivacyModeService';
-import { PriceService } from '../services/PriceService';
 import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
 import { ChainActivityCacheService } from '../services/transactions/ChainActivityCacheService';
 import { ExposureScannerService, type ExposureLevel } from '../services/security/ExposureScannerService';
 import { ReceiveIdentityService } from '../services/identity/ReceiveIdentityService';
 import { PrivacyAssessmentService } from '../services/privacy/PrivacyAssessmentService';
 import type { PrivacyLevel } from '../services/privacy/PrivacyTypes';
-import { WALLET_ASSETS } from '../config/assetCatalog';
+import {
+  SyndicateMarketService,
+  type SyndicateMarketRow,
+} from '../services/syndicate/SyndicateMarketService';
 import {
   Ron1nColors,
   Ron1nSpacing,
@@ -29,8 +32,15 @@ import {
 } from '../theme/ron1nTheme';
 
 const ACCOUNT_ID = 'primary';
-const MARKET_SYMBOLS = ['BTC', 'ETH', 'SOL', 'XRP', 'HBAR'];
-const PRICED_SYMBOLS = ['BTC', 'ETH', 'SOL', 'XRP'];
+
+function formatTimeAgoShort(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
 
 const EXPOSURE_TONE: Record<ExposureLevel, Ron1nStatusTone> = {
   FRESH: 'success',
@@ -53,6 +63,25 @@ const PRIVACY_LABEL: Record<PrivacyLevel, string> = {
   MAXIMUM_AVAILABLE: 'MAXIMUM AVAILABLE',
 };
 
+function trendForRow(row: SyndicateMarketRow): 'up' | 'down' | 'flat' {
+  if (row.change24h !== null) {
+    if (row.change24h > 0) return 'up';
+    if (row.change24h < 0) return 'down';
+    return 'flat';
+  }
+
+  // No 24h figure from the provider - fall back to the sparkline's own
+  // first-vs-last movement so the chart color still matches its own shape.
+  if (row.sparkline && row.sparkline.length >= 2) {
+    const [first] = row.sparkline;
+    const last = row.sparkline[row.sparkline.length - 1];
+    if (last > first) return 'up';
+    if (last < first) return 'down';
+  }
+
+  return 'flat';
+}
+
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diffMs / 60000);
@@ -71,8 +100,9 @@ export default function SyndicateScreen() {
 
   const [hasVault, setHasVault] = useState(false);
   const [privacyMode, setPrivacyMode] = useState(true);
-  const [prices, setPrices] = useState<Record<string, number>>({});
-  const [pricesLoading, setPricesLoading] = useState(true);
+  const [marketRows, setMarketRows] = useState<SyndicateMarketRow[]>([]);
+  const [marketLoading, setMarketLoading] = useState(true);
+  const [marketRefreshedAt, setMarketRefreshedAt] = useState<string | null>(null);
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [exposureLevel, setExposureLevel] = useState<ExposureLevel | null>(null);
   const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel | null>(null);
@@ -111,19 +141,33 @@ export default function SyndicateScreen() {
     }
   }, []);
 
+  const loadMarket = useCallback(async () => {
+    try {
+      setMarketLoading(true);
+      // Market prices are public data - deliberately independent of whether
+      // a vault exists. Syndicate never reads a wallet address or balance.
+      const snapshot = await SyndicateMarketService.loadLive();
+      setMarketRows(snapshot.rows);
+      setMarketRefreshedAt(snapshot.refreshedAt);
+    } catch (error) {
+      console.error('Failed to load Syndicate market data:', error);
+      setMarketRows([]);
+      setMarketRefreshedAt(null);
+    } finally {
+      setMarketLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
-    void (async () => {
-      setPricesLoading(true);
-      setPrices(await PriceService.getUsdPrices(PRICED_SYMBOLS));
-      setPricesLoading(false);
-    })();
-  }, [load]);
+    void loadMarket();
+  }, [load, loadMarket]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+      void loadMarket();
+    }, [load, loadMarket])
   );
 
   const recentActivity = activities.slice(0, 5);
@@ -190,49 +234,80 @@ export default function SyndicateScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>MARKETS</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>MARKET</Text>
+          {marketRefreshedAt ? (
+            <Text style={styles.refreshedLabel}>
+              UPDATED {formatTimeAgoShort(marketRefreshedAt).toUpperCase()}
+            </Text>
+          ) : null}
+        </View>
         <Ron1nCard>
-          {MARKET_SYMBOLS.map((symbol) => {
-            const price = prices[symbol];
-            const priceable = PRICED_SYMBOLS.includes(symbol);
+          {marketLoading ? (
+            <Text style={styles.rowMuted}>LOADING MARKET DATA…</Text>
+          ) : marketRows.length === 0 ? (
+            <Ron1nEmptyState
+              icon="alert-circle-outline"
+              title="NOT AVAILABLE"
+              message="Market data could not be loaded right now."
+            />
+          ) : (
+            marketRows.map((row) => (
+              <View key={row.symbol} style={styles.assetRow}>
+                <View style={styles.assetRowTop}>
+                  <View>
+                    <Text style={styles.rowLabel}>{row.symbol}</Text>
+                    <Text style={styles.rowSubLabel}>
+                      {row.name} • {row.network}
+                    </Text>
+                  </View>
 
-            return (
-              <View key={symbol} style={styles.row}>
-                <Text style={styles.rowLabel}>{symbol}</Text>
-                {!priceable ? (
-                  <Ron1nStatusBadge tone="neutral" label="NOT YET AVAILABLE" />
-                ) : pricesLoading ? (
-                  <Text style={styles.rowMuted}>LOADING…</Text>
-                ) : typeof price === 'number' ? (
-                  <Text style={styles.rowValue}>
-                    ${price.toLocaleString('en-US', { maximumFractionDigits: price < 1 ? 4 : 2 })}
-                  </Text>
-                ) : (
-                  <Text style={styles.rowMuted}>NO DATA</Text>
-                )}
-              </View>
-            );
-          })}
-        </Ron1nCard>
+                  <View style={styles.assetValueBlock}>
+                    {row.status === 'LIVE' && row.priceUsd !== null ? (
+                      <Text style={styles.rowValue}>
+                        ${row.priceUsd.toLocaleString('en-US', {
+                          maximumFractionDigits: row.priceUsd < 1 ? 6 : 2,
+                        })}
+                      </Text>
+                    ) : (
+                      <Text style={styles.rowMuted}>NO PRICE DATA</Text>
+                    )}
+                    {row.status === 'LIVE' && row.change24h !== null ? (
+                      <Text
+                        style={[
+                          styles.rowSubLabel,
+                          {
+                            color:
+                              row.change24h > 0
+                                ? Ron1nColors.green
+                                : row.change24h < 0
+                                  ? Ron1nColors.danger
+                                  : Ron1nColors.muted,
+                          },
+                        ]}
+                      >
+                        {row.change24h >= 0 ? '+' : ''}
+                        {row.change24h.toFixed(2)}% 24H
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
 
-        <Text style={styles.sectionTitle}>PORTFOLIO</Text>
-        <Ron1nCard>
-          {WALLET_ASSETS.map((asset) => (
-            <TouchableOpacity
-              key={asset.symbol}
-              style={styles.row}
-              onPress={openWallet}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${asset.name} in Shogun Wallet`}
-            >
-              <View>
-                <Text style={styles.rowLabel}>{asset.symbol}</Text>
-                <Text style={styles.rowSubLabel}>{asset.name}</Text>
+                {row.status === 'LIVE' && row.sparkline ? (
+                  <View style={styles.sparklineRow}>
+                    <Ron1nSparkline data={row.sparkline} trend={trendForRow(row)} />
+                  </View>
+                ) : null}
+
+                <View style={styles.assetBadgeRow}>
+                  <Ron1nStatusBadge
+                    tone={row.status === 'LIVE' ? 'success' : 'neutral'}
+                    label={row.status === 'LIVE' ? 'LIVE' : 'NO PRICE DATA'}
+                  />
+                </View>
               </View>
-              <Ionicons name="chevron-forward" size={16} color="#666670" />
-            </TouchableOpacity>
-          ))}
+            ))
+          )}
         </Ron1nCard>
 
         <Text style={styles.sectionTitle}>RECENT ACTIVITY</Text>
@@ -341,6 +416,40 @@ const styles = StyleSheet.create({
     ...Ron1nTypography.sectionTitle,
     color: Ron1nColors.white,
     marginBottom: Ron1nSpacing.sm,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  refreshedLabel: {
+    ...Ron1nTypography.caption,
+    color: Ron1nColors.muted,
+    marginBottom: Ron1nSpacing.sm,
+  },
+  assetRow: {
+    paddingVertical: Ron1nSpacing.sm + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1C1C22',
+    gap: Ron1nSpacing.xs,
+  },
+  assetRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  assetValueBlock: {
+    alignItems: 'flex-end',
+  },
+  assetBadgeRow: {
+    flexDirection: 'row',
+    gap: Ron1nSpacing.xs,
+    flexWrap: 'wrap',
+  },
+  sparklineRow: {
+    marginTop: Ron1nSpacing.xs,
+    marginBottom: Ron1nSpacing.xs,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
