@@ -13,7 +13,7 @@ import type { ShogunIdentityRecord } from '../services/identity/IdentityRegistry
 import { AssetProtectionService, type AssetProtectionStatus } from '../services/privacy/AssetProtectionService';
 import type { PrivacyAction, PrivacyLevel } from '../services/privacy/PrivacyTypes';
 import type { SupportedChain } from '../services/crypto/types';
-import { Ron1nColors, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 const ACCOUNT_ID = 'primary';
 
@@ -295,12 +295,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: Ron1nGlass.border,
+    backgroundColor: Ron1nGlass.surface,
   },
   assetChipSelected: {
-    borderColor: 'rgba(140,0,255,0.6)',
-    backgroundColor: 'rgba(140,0,255,0.16)',
+    borderColor: `${Ron1nColors.purple}99`,
+    backgroundColor: `${Ron1nColors.purple}29`,
   },
   assetChipText: {
     color: '#9B9BA8',
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: Ron1nGlass.borderStrong,
     alignItems: 'center',
   },
   actionButtonSeparate: {

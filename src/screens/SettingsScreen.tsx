@@ -25,7 +25,7 @@ import {
   StartupPreferenceService,
   type StartupDestination,
 } from '../services/StartupPreferenceService';
-import { Ron1nColors, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 type SettingsMode = 'settings' | 'recovery';
 
@@ -906,14 +906,14 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: Ron1nGlass.border,
+    backgroundColor: Ron1nGlass.surface,
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
   startupOptionSelected: {
-    borderColor: 'rgba(140,0,255,0.6)',
-    backgroundColor: 'rgba(140,0,255,0.14)',
+    borderColor: `${Ron1nColors.purple}99`,
+    backgroundColor: `${Ron1nColors.purple}24`,
   },
   radioOuter: {
     width: 18,

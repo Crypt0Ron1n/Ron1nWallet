@@ -9,7 +9,7 @@ import {
   QuantumExposureRecord,
 } from '../services/QuantumExposureService';
 import { EvmAddressRotationService } from '../services/security/EvmAddressRotationService';
-import { Ron1nColors, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nMonospace, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 const EXPOSURE_STATUS_TONE: Record<string, Ron1nStatusTone> = {
   SAFE: 'success',
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     color: '#777',
     fontSize: 10,
     marginTop: 8,
-    fontFamily: 'monospace',
+    fontFamily: Ron1nMonospace.fontFamily,
   },
   spacer: {
     height: 16,

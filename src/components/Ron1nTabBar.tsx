@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, ron1nGlow } from '../theme/ron1nTheme';
 
 type Props = {
   state: any;
@@ -90,7 +90,11 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: Props) {
                 accessibilityLabel={String(label)}
                 accessibilityState={{ selected: focused }}
                 onPress={onPress}
-                style={[styles.item, focused && styles.itemActive]}
+                style={[
+                  styles.item,
+                  focused && styles.itemActive,
+                  focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm') : null,
+                ]}
                 activeOpacity={0.8}
               >
                 <Ionicons
@@ -128,12 +132,9 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(140,0,255,0.45)',
-    backgroundColor: '#08080C',
-    shadowColor: Ron1nColors.purple,
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    borderColor: Ron1nGlass.borderStrong,
+    backgroundColor: Ron1nGlass.overlay,
+    ...ron1nGlow(Ron1nColors.purple, 'sm'),
   },
   scrollContent: {
     paddingHorizontal: 6,

@@ -47,6 +47,53 @@ export const Ron1nGradients = {
   green: ['#003B1F', '#00A83B', '#00FF41'] as const,
 };
 
+/**
+ * Phase "Premium Glass" foundation. Consolidates the translucent
+ * surface/border opacities every screen was previously re-typing as its own
+ * local magic rgba strings (e.g. 'rgba(255,255,255,0.035)') into one shared
+ * vocabulary, so a card on Syndicate and a card on Security read as the same
+ * material.
+ *
+ * No `backdrop-filter`/blur anywhere here on purpose - React Native has no
+ * reliable cross-platform blur without an extra native dependency this repo
+ * doesn't already have (no expo-blur installed). This is the explicitly
+ * sanctioned fallback: layered translucent backgrounds + hairline borders +
+ * restrained shadows, which render identically on Android, iOS, and
+ * GrapheneOS-compatible Android.
+ */
+export const Ron1nGlass = {
+  surface: 'rgba(255,255,255,0.035)',
+  surfaceElevated: 'rgba(255,255,255,0.055)',
+  surfaceStrong: 'rgba(255,255,255,0.08)',
+  border: 'rgba(255,255,255,0.09)',
+  borderStrong: 'rgba(255,255,255,0.16)',
+  highlight: 'rgba(255,255,255,0.05)',
+  /** For chrome that floats OVER scrolling content (e.g. the bottom tab
+   * bar) rather than sitting in normal document flow - needs enough
+   * opacity to stay legible against whatever scrolls underneath it. */
+  overlay: '#0A0A0DE6',
+} as const;
+
+/**
+ * Restrained edge illumination. Only ever applied to the handful of elements
+ * the brief calls out by name (primary CTA, active nav item, a verified
+ * security indicator, a selected chart) - never as a blanket treatment on
+ * every card. `elevation` on Android does not carry shadowColor before API
+ * 28, so this is a best-effort glow there and a true colored shadow on iOS;
+ * neither platform is left with a broken/clipped shape.
+ */
+export function ron1nGlow(color: string, intensity: 'sm' | 'md' | 'lg' = 'md') {
+  const scale = { sm: { opacity: 0.18, radius: 8, elevation: 3 }, md: { opacity: 0.26, radius: 14, elevation: 6 }, lg: { opacity: 0.34, radius: 20, elevation: 9 } }[intensity];
+
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: scale.opacity,
+    shadowRadius: scale.radius,
+    elevation: scale.elevation,
+  } as const;
+}
+
 export const Ron1nSemanticColors = {
   primaryAction: Ron1nColors.neonPurple,
   primaryActionBackground: Ron1nColors.deepPurple,

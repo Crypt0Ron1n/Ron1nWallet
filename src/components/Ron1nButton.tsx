@@ -9,6 +9,7 @@ import {
   Ron1nRadii,
   Ron1nSpacing,
   Ron1nTypography,
+  ron1nGlow,
 } from '../theme/ron1nTheme';
 
 export type Ron1nButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
@@ -91,6 +92,9 @@ export default function Ron1nButton({
           backgroundColor: tone.background,
           borderColor: tone.border,
         },
+        // Glow is reserved for the primary call-to-action only - every other
+        // variant (secondary/outline/danger/ghost) stays flat on purpose.
+        variant === 'primary' && !isInactive ? ron1nGlow(Ron1nColors.neonPurple, 'md') : null,
         isInactive && styles.inactive,
       ]}
     >

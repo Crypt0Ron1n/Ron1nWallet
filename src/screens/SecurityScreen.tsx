@@ -29,7 +29,7 @@ import {
   type AddressRotationPrepRecord,
   type RotationPrepStatus,
 } from '../services/security/AddressRotationPrepService';
-import { Ron1nColors, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 const EXPOSURE_TONE: Record<ExposureLevel, Ron1nStatusTone> = {
   FRESH: 'success',
@@ -273,7 +273,7 @@ export default function SecurityScreen() {
         />
 
         {needsAttention ? (
-          <Ron1nCard>
+          <Ron1nCard glow="amber">
             <View style={styles.attentionHeader}>
               <Ron1nStatusBadge tone="warning" label="ATTENTION REQUIRED" />
             </View>
@@ -289,7 +289,7 @@ export default function SecurityScreen() {
           </Ron1nCard>
         ) : null}
 
-        <Ron1nCard>
+        <Ron1nCard glow={score >= 90 ? 'green' : score < 60 ? 'danger' : 'none'}>
           <Text style={styles.scoreLabel}>RON1N SECURITY SCORE</Text>
 
           <View style={styles.scoreRow}>
@@ -669,9 +669,9 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: '48%',
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: Ron1nGlass.surfaceElevated,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: Ron1nGlass.border,
     borderRadius: 18,
     padding: 14,
   },
@@ -926,9 +926,9 @@ const styles = StyleSheet.create({
   },
   activityRow: {
     marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.035)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: Ron1nGlass.border,
     borderRadius: 16,
     padding: 14,
   },

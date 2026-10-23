@@ -46,7 +46,7 @@ import { VaultService } from '../services/VaultService';
 import { WalletService } from '../services/WalletService';
 import { ReceiveIdentityService } from '../services/identity/ReceiveIdentityService';
 import type { SupportedChain } from '../services/crypto/types';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass } from '../theme/ron1nTheme';
 
 type WalletAsset = {
   symbol: string;
@@ -847,9 +847,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: Ron1nGlass.surfaceElevated,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: Ron1nGlass.border,
   },
   heroCard: {
     borderRadius: 27,
@@ -922,9 +922,9 @@ const styles = StyleSheet.create({
     padding: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.035)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
+    borderColor: Ron1nGlass.border,
   },
   actionPrimary: {
     backgroundColor: `${Ron1nColors.purple}18`,
@@ -958,9 +958,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: Ron1nGlass.border,
   },
   modeText: {
     flexDirection: 'row',
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Ron1nGlass.surface,
   },
   sectionHeader: {
     flexDirection: 'row',

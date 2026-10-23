@@ -26,6 +26,7 @@ import {
 } from '../services/syndicate/SyndicateMarketService';
 import {
   Ron1nColors,
+  Ron1nGlass,
   Ron1nSpacing,
   Ron1nTypography,
   type Ron1nStatusTone,
@@ -242,7 +243,7 @@ export default function SyndicateScreen() {
             </Text>
           ) : null}
         </View>
-        <Ron1nCard>
+        <Ron1nCard glow="cyan">
           {marketLoading ? (
             <Text style={styles.rowMuted}>LOADING MARKET DATA…</Text>
           ) : marketRows.length === 0 ? (
@@ -380,9 +381,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18,
     padding: Ron1nSpacing.md,
-    backgroundColor: 'rgba(255,255,255,0.035)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
+    borderColor: Ron1nGlass.border,
     gap: Ron1nSpacing.sm,
   },
   statusLabel: {
@@ -402,9 +403,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Ron1nSpacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.035)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.09)',
+    borderColor: Ron1nGlass.border,
   },
   actionTitle: {
     fontSize: 8,

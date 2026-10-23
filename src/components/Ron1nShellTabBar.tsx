@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, ron1nGlow } from '../theme/ron1nTheme';
 
 export type ShellRouteName = 'Syndicate' | 'Shogun' | 'Security';
 
@@ -47,7 +47,11 @@ export default function Ron1nShellTabBar({ active, onSelect }: Props) {
               accessibilityLabel={route.toUpperCase()}
               accessibilityState={{ selected: focused }}
               onPress={() => onSelect(route)}
-              style={[styles.item, focused && styles.itemActive]}
+              style={[
+                styles.item,
+                focused && styles.itemActive,
+                focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm') : null,
+              ]}
               activeOpacity={0.85}
             >
               <Ionicons
@@ -77,8 +81,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(140,0,255,0.35)',
-    backgroundColor: '#08080C',
+    borderColor: Ron1nGlass.borderStrong,
+    backgroundColor: Ron1nGlass.surfaceElevated,
     overflow: 'hidden',
   },
   item: {

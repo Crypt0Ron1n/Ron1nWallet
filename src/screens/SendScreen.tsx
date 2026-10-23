@@ -36,7 +36,7 @@ import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import type { SecurityPolicyResult } from '../services/SecurityPolicyEngine';
 import type { TransactionIntent } from '../services/transactions/TransactionIntent';
 import type { SignedPayload } from '../services/crypto/types';
-import { Ron1nColors, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nMonospace, type Ron1nStatusTone } from '../theme/ron1nTheme';
 import { ProtectBeforeSendService } from '../services/security/ProtectBeforeSendService';
 import { IdentityRegistryService } from '../services/identity/IdentityRegistryService';
 
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
     padding: 14,
     color: Ron1nColors.white,
     backgroundColor: '#080808',
-    fontFamily: 'monospace',
+    fontFamily: Ron1nMonospace.fontFamily,
   },
   quoteBox: {
     marginTop: 18,
@@ -1140,7 +1140,7 @@ const styles = StyleSheet.create({
   reviewAddress: {
     color: Ron1nColors.purple,
     marginTop: 14,
-    fontFamily: 'monospace',
+    fontFamily: Ron1nMonospace.fontFamily,
   },
   policyBox: {
     marginTop: 16,

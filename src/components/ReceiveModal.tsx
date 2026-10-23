@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import Ron1nButton from './Ron1nButton';
 import Ron1nStatusBadge from './Ron1nStatusBadge';
-import { Ron1nColors, Ron1nRadii, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nMonospace, Ron1nRadii, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 export type AssetInfo = {
   symbol: string;
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     color: '#00FF41',
     fontSize: 13,
     textAlign: 'center',
-    fontFamily: 'monospace',
+    fontFamily: Ron1nMonospace.fontFamily,
   },
   identitySection: {
     width: '100%',

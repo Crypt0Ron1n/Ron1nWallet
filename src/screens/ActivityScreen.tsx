@@ -25,7 +25,7 @@ import {
   type PersistedTransactionLifecycle,
   type TransactionLifecycleState,
 } from '../services/transactions/TransactionLifecycleService';
-import { Ron1nColors, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nMonospace, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 type ActivityTab = 'PRIVATE' | 'CHAIN' | 'TRANSACTIONS';
 
@@ -595,6 +595,7 @@ const styles = StyleSheet.create({
   txHash: {
     color: '#888888',
     fontSize: 10,
+    fontFamily: Ron1nMonospace.fontFamily,
   },
   moreIssues: {
     color: '#AAAAAA',
