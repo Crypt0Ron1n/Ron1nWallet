@@ -21,6 +21,7 @@ import SyndicateScreen from './src/screens/SyndicateScreen';
 import Ron1nTabBar from './src/components/Ron1nTabBar';
 import Ron1nShellTabBar, { type ShellRouteName } from './src/components/Ron1nShellTabBar';
 import { VaultService } from './src/services/VaultService';
+import { BroadcastService } from './src/services/transactions/BroadcastService';
 import {
   StartupPreferenceService,
   type StartupDestination,
@@ -234,6 +235,21 @@ export default function App() {
       const route = destinationToRoute(startupDestination);
       setInitialShellRoute(route);
       setActiveShellRoute(route);
+
+      if (mnemonic) {
+        // Fire-and-forget: recovers any transaction left in a non-terminal
+        // state (interrupted broadcast, app killed mid-reconciliation,
+        // network loss) without blocking wallet access on it, and without
+        // any biometric prompt - this only reads public chain state for
+        // already-signed transactions, it never touches vault secrets or
+        // signs/broadcasts anything. BroadcastService.reconcileRecoverable()
+        // is single-flight internally, so this is safe even if checkVault()
+        // ever runs more than once.
+        void BroadcastService.reconcileRecoverable().catch(() => {
+          // Recovery failures must never surface as an app-breaking error -
+          // the Activity screen's manual Reconcile action remains available.
+        });
+      }
     } catch (error) {
       setHasVault(false);
     } finally {

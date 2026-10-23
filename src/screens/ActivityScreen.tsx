@@ -15,6 +15,7 @@ import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nScreenHeader from '../components/Ron1nScreenHeader';
 import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
 import Ron1nEmptyState from '../components/Ron1nEmptyState';
+import Ron1nButton from '../components/Ron1nButton';
 import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
 import {
   ChainActivityCacheService,
@@ -25,9 +26,24 @@ import {
   type PersistedTransactionLifecycle,
   type TransactionLifecycleState,
 } from '../services/transactions/TransactionLifecycleService';
+import { BroadcastService } from '../services/transactions/BroadcastService';
 import { Ron1nColors, Ron1nMonospace, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 type ActivityTab = 'PRIVATE' | 'CHAIN' | 'TRANSACTIONS';
+
+/**
+ * Only these states have anything meaningful to resolve. CONFIRMED/FAILED
+ * are already terminal (nothing to check); CREATED/SIGNED were never even
+ * submitted to a provider, so reconciling them would only ever and always
+ * report UNKNOWN - offering an action there would look like progress
+ * without ever being able to produce one.
+ */
+const RECONCILABLE_STATES: ReadonlySet<TransactionLifecycleState> = new Set([
+  'BROADCASTING',
+  'PENDING',
+  'UNKNOWN',
+  'RECONCILE_REQUIRED',
+]);
 
 const LIFECYCLE_TONE: Record<TransactionLifecycleState, Ron1nStatusTone> = {
   CREATED: 'neutral',
@@ -48,6 +64,7 @@ export default function ActivityScreen() {
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [chainActivity, setChainActivity] = useState<Record<string, CachedChainActivity>>({});
   const [lifecycleRecords, setLifecycleRecords] = useState<PersistedTransactionLifecycle[]>([]);
+  const [reconcilingHashes, setReconcilingHashes] = useState<ReadonlySet<string>>(new Set());
 
   const load = async () => {
     try {
@@ -160,6 +177,75 @@ export default function ActivityScreen() {
     );
   };
 
+  const handleReconcile = async (transactionHash: string) => {
+    if (reconcilingHashes.has(transactionHash)) {
+      return;
+    }
+
+    setReconcilingHashes((prev) => new Set(prev).add(transactionHash));
+
+    try {
+      const result = await BroadcastService.recoverPersisted(transactionHash);
+
+      if (!result.ok) {
+        const title =
+          result.code === 'PROVIDER_ERROR'
+            ? 'Reconciliation Unavailable'
+            : result.code === 'IN_PROGRESS'
+              ? 'Already Reconciling'
+              : result.code === 'UNSUPPORTED'
+                ? 'Not Supported'
+                : 'Reconciliation Failed';
+
+        const message =
+          result.code === 'PROVIDER_ERROR'
+            ? `The network provider could not be reached. This does not mean the transaction failed.\n\n${result.reason}`
+            : result.reason;
+
+        Alert.alert(title, message);
+        return;
+      }
+
+      const { reconciliation, alreadyTerminal } = result;
+
+      if (alreadyTerminal) {
+        Alert.alert(
+          'Already Resolved',
+          `This transaction already reached a final state (${reconciliation.status}). Nothing to reconcile.`
+        );
+      } else if (reconciliation.status === 'CONFIRMED') {
+        Alert.alert(
+          'Transaction Confirmed',
+          `Confirmed in block ${reconciliation.blockNumber ?? 'unknown'} with ${reconciliation.confirmations ?? 0} confirmation(s).`
+        );
+      } else if (reconciliation.status === 'FAILED') {
+        Alert.alert(
+          'Transaction Failed On-Chain',
+          'The network reported a failed execution status for this transaction.'
+        );
+      } else if (reconciliation.status === 'PENDING') {
+        Alert.alert('Still Pending', 'The provider has seen this transaction but it has not been mined yet.');
+      } else {
+        Alert.alert(
+          'Still Unknown',
+          'The provider could not locate this transaction yet. This is not proof it failed - try again shortly.'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        'Reconciliation Error',
+        error instanceof Error ? error.message : 'Unable to reconcile this transaction right now.'
+      );
+    } finally {
+      setReconcilingHashes((prev) => {
+        const next = new Set(prev);
+        next.delete(transactionHash);
+        return next;
+      });
+      await load();
+    }
+  };
+
   const renderTabs = () => (
     <View style={styles.tabRow}>
       <TouchableOpacity
@@ -243,6 +329,26 @@ export default function ActivityScreen() {
 
               {record.lastError ? (
                 <Text style={styles.errorText}>{record.lastError}</Text>
+              ) : null}
+
+              {RECONCILABLE_STATES.has(record.state) ? (
+                BroadcastService.isReconciliationSupported(record.asset) ? (
+                  <View style={styles.reconcileButtonWrap}>
+                    <Ron1nButton
+                      label={reconcilingHashes.has(record.transactionHash) ? 'RECONCILING…' : 'RECONCILE'}
+                      variant="outline"
+                      fullWidth={false}
+                      busy={reconcilingHashes.has(record.transactionHash)}
+                      disabled={reconcilingHashes.has(record.transactionHash)}
+                      onPress={() => void handleReconcile(record.transactionHash)}
+                      accessibilityHint="Checks the live network for this transaction's current status. Never signs or resubmits anything."
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.reconcileUnsupportedText}>
+                    Reconciliation is not available yet for {record.asset}.
+                  </Text>
+                )
               ) : null}
             </Ron1nCard>
           ))}
@@ -563,6 +669,15 @@ const styles = StyleSheet.create({
     color: '#FF9999',
     fontSize: 12,
     lineHeight: 18,
+  },
+  reconcileButtonWrap: {
+    marginTop: Ron1nSpacing.sm,
+    alignSelf: 'flex-start',
+  },
+  reconcileUnsupportedText: {
+    ...Ron1nTypography.caption,
+    color: Ron1nColors.muted,
+    marginTop: Ron1nSpacing.sm,
   },
   txList: {
     gap: 10,
