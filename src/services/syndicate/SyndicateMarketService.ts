@@ -2,11 +2,14 @@ import { PriceService } from '../PriceService';
 import { RON1N_ASSETS, resolveNetworkIdentifier } from '../../config/assetCatalog';
 import { pointsToCandles, type Candle } from '../../utils/candlestickMath';
 
-export type SyndicateCandleTimeframe = '5m' | '15m' | '4h';
+export type SyndicateCandleTimeframe = '5m' | '15m' | '4h' | '24h';
 
-const TIMEFRAME_BUCKET_MS: Record<'5m' | '15m', number> = {
+const TIMEFRAME_BUCKET_MS: Record<'5m' | '15m' | '24h', number> = {
   '5m': 5 * 60 * 1000,
   '15m': 15 * 60 * 1000,
+  // Real hourly candles over the same 1-day point series used for 5m/15m -
+  // ~24 bars, no extra API call.
+  '24h': 60 * 60 * 1000,
 };
 
 /**

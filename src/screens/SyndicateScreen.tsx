@@ -186,12 +186,16 @@ export default function SyndicateScreen() {
   // Both LINE and CANDLES render the same per-timeframe candle series (as a
   // line of closes, or as full OHLC) - so the data must load for the
   // selected timeframe regardless of which chart mode is active, including
-  // on first mount.
+  // on first mount. Gated on `!marketLoading` so the heavy per-coin
+  // candle/OHLC fetch (12-16 parallel requests) never races the single
+  // batched price call - firing both at once was enough to get the price
+  // call rate-limited alongside them.
   useEffect(() => {
+    if (marketLoading) return;
     if (!candlesByTimeframe[timeframe]) {
       loadTimeframeCandles(timeframe);
     }
-  }, [timeframe, candlesByTimeframe, loadTimeframeCandles]);
+  }, [timeframe, candlesByTimeframe, loadTimeframeCandles, marketLoading]);
 
   useEffect(() => {
     void load();
@@ -302,7 +306,7 @@ export default function SyndicateScreen() {
         </View>
 
         <View style={styles.timeframeRow}>
-          {(['5m', '15m', '4h'] as const).map((tf) => (
+          {(['5m', '15m', '4h', '24h'] as const).map((tf) => (
             <TouchableOpacity
               key={tf}
               style={[styles.timeframeOption, timeframe === tf && styles.timeframeOptionActive]}
