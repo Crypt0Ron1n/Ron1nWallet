@@ -99,7 +99,7 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: Props) {
               >
                 <Ionicons
                   name={focused ? icons.active : icons.inactive}
-                  size={22}
+                  size={19}
                   color={focused ? Ron1nColors.neonPurple : Ron1nColors.muted}
                 />
 
@@ -129,36 +129,38 @@ const styles = StyleSheet.create({
     bottom: Platform.OS === 'ios' ? 10 : 8,
   },
   bar: {
-    height: 72,
-    borderRadius: 20,
+    height: 60,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Ron1nGlass.borderStrong,
     backgroundColor: Ron1nGlass.overlay,
+    justifyContent: 'center',
     ...ron1nGlow(Ron1nColors.purple, 'sm'),
   },
   scrollContent: {
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
   item: {
     width: ITEM_WIDTH,
-    height: 60,
-    marginHorizontal: 2,
-    borderRadius: 15,
+    height: 46,
+    marginHorizontal: 5,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'transparent',
+    borderColor: Ron1nGlass.border,
+    backgroundColor: Ron1nGlass.surface,
   },
   itemActive: {
     backgroundColor: `${Ron1nColors.neonPurple}2E`,
     borderColor: `${Ron1nColors.neonPurple}BF`,
   },
   label: {
-    marginTop: 5,
-    fontSize: 10,
-    lineHeight: 13,
+    marginTop: 3,
+    fontSize: 9,
+    lineHeight: 11,
     fontWeight: '900',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
 });
