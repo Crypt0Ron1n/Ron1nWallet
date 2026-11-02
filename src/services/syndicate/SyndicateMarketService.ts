@@ -9,6 +9,16 @@ const TIMEFRAME_BUCKET_MS: Record<'5m' | '15m', number> = {
   '15m': 15 * 60 * 1000,
 };
 
+/**
+ * Both the 5m/15m resample (up to ~288 raw points) and the 4h OHLC window
+ * are trimmed to this many most-recent candles. Without this, 5m/15m would
+ * try to cram 96-288 candles into a card-sized chart - every value still
+ * real, just visually illegible. Keeping only the most recent window keeps
+ * the chart readable while staying honest about what it's showing (recent
+ * history, not the full 7/1-day range).
+ */
+const MAX_CANDLES = 48;
+
 export type SyndicateMarketRow = {
   symbol: string;
   name: string;
@@ -98,7 +108,7 @@ export class SyndicateMarketService {
       const ohlc = await PriceService.getOhlc(symbols);
       const candles: Record<string, Candle[]> = {};
       for (const [symbol, bars] of Object.entries(ohlc)) {
-        candles[symbol] = bars.map(({ o, h, l, c }) => ({ o, h, l, c }));
+        candles[symbol] = bars.slice(-MAX_CANDLES).map(({ o, h, l, c }) => ({ o, h, l, c }));
       }
       return candles;
     }
@@ -108,7 +118,7 @@ export class SyndicateMarketService {
 
     const candles: Record<string, Candle[]> = {};
     for (const [symbol, points] of Object.entries(pointSeries)) {
-      const resampled = pointsToCandles(points, bucketMs);
+      const resampled = pointsToCandles(points, bucketMs).slice(-MAX_CANDLES);
       if (resampled.length > 0) {
         candles[symbol] = resampled;
       }

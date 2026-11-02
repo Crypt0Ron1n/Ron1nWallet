@@ -303,6 +303,14 @@ export default function SecurityScreen() {
             This score is based on local vault posture and cached public-chain exposure
             data from user-approved manual syncs.
           </Text>
+
+          {score < 90 ? (
+            <Text style={styles.scoreImprove}>
+              To raise it: rotate any LOW or ELEVATED exposure asset below (sweeps its
+              balance to a fresh, unexposed address) and resolve failed syncs via
+              Wallet → Manual Sync, then run the exposure scan again.
+            </Text>
+          ) : null}
         </Ron1nCard>
 
         <View style={styles.grid}>
@@ -660,6 +668,13 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     textAlign: 'center',
     marginTop: 12,
+  },
+  scoreImprove: {
+    color: Ron1nColors.gold,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginTop: 10,
   },
   grid: {
     flexDirection: 'row',

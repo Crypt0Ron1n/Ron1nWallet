@@ -67,22 +67,12 @@ const PRIVACY_LABEL: Record<PrivacyLevel, string> = {
   MAXIMUM_AVAILABLE: 'MAXIMUM AVAILABLE',
 };
 
-function trendForRow(row: SyndicateMarketRow): 'up' | 'down' | 'flat' {
-  if (row.change24h !== null) {
-    if (row.change24h > 0) return 'up';
-    if (row.change24h < 0) return 'down';
-    return 'flat';
-  }
-
-  // No 24h figure from the provider - fall back to the sparkline's own
-  // first-vs-last movement so the chart color still matches its own shape.
-  if (row.sparkline && row.sparkline.length >= 2) {
-    const [first] = row.sparkline;
-    const last = row.sparkline[row.sparkline.length - 1];
-    if (last > first) return 'up';
-    if (last < first) return 'down';
-  }
-
+function trendFromCandles(candles: Candle[]): 'up' | 'down' | 'flat' {
+  if (candles.length === 0) return 'flat';
+  const first = candles[0].o;
+  const last = candles[candles.length - 1].c;
+  if (last > first) return 'up';
+  if (last < first) return 'down';
   return 'flat';
 }
 
@@ -185,27 +175,23 @@ export default function SyndicateScreen() {
     []
   );
 
-  const handleSelectChartMode = useCallback(
-    (mode: 'LINE' | 'CANDLES') => {
-      setChartMode(mode);
+  const handleSelectChartMode = useCallback((mode: 'LINE' | 'CANDLES') => {
+    setChartMode(mode);
+  }, []);
 
-      if (mode === 'CANDLES' && !candlesByTimeframe[timeframe]) {
-        loadTimeframeCandles(timeframe);
-      }
-    },
-    [candlesByTimeframe, timeframe, loadTimeframeCandles]
-  );
+  const handleSelectTimeframe = useCallback((tf: SyndicateCandleTimeframe) => {
+    setTimeframe(tf);
+  }, []);
 
-  const handleSelectTimeframe = useCallback(
-    (tf: SyndicateCandleTimeframe) => {
-      setTimeframe(tf);
-
-      if (!candlesByTimeframe[tf]) {
-        loadTimeframeCandles(tf);
-      }
-    },
-    [candlesByTimeframe, loadTimeframeCandles]
-  );
+  // Both LINE and CANDLES render the same per-timeframe candle series (as a
+  // line of closes, or as full OHLC) - so the data must load for the
+  // selected timeframe regardless of which chart mode is active, including
+  // on first mount.
+  useEffect(() => {
+    if (!candlesByTimeframe[timeframe]) {
+      loadTimeframeCandles(timeframe);
+    }
+  }, [timeframe, candlesByTimeframe, loadTimeframeCandles]);
 
   useEffect(() => {
     void load();
@@ -315,27 +301,25 @@ export default function SyndicateScreen() {
           ))}
         </View>
 
-        {chartMode === 'CANDLES' ? (
-          <View style={styles.timeframeRow}>
-            {(['5m', '15m', '4h'] as const).map((tf) => (
-              <TouchableOpacity
-                key={tf}
-                style={[styles.timeframeOption, timeframe === tf && styles.timeframeOptionActive]}
-                onPress={() => handleSelectTimeframe(tf)}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityState={{ selected: timeframe === tf }}
-                accessibilityLabel={`${tf} candles`}
+        <View style={styles.timeframeRow}>
+          {(['5m', '15m', '4h'] as const).map((tf) => (
+            <TouchableOpacity
+              key={tf}
+              style={[styles.timeframeOption, timeframe === tf && styles.timeframeOptionActive]}
+              onPress={() => handleSelectTimeframe(tf)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ selected: timeframe === tf }}
+              accessibilityLabel={`${tf} chart`}
+            >
+              <Text
+                style={[styles.timeframeOptionText, timeframe === tf && styles.timeframeOptionTextActive]}
               >
-                <Text
-                  style={[styles.timeframeOptionText, timeframe === tf && styles.timeframeOptionTextActive]}
-                >
-                  {tf.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : null}
+                {tf.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <Ron1nCard glow="cyan">
           {marketLoading ? (
@@ -388,18 +372,19 @@ export default function SyndicateScreen() {
                   </View>
                 </View>
 
-                {row.status === 'LIVE' && chartMode === 'LINE' && row.sparkline ? (
-                  <View style={styles.sparklineRow}>
-                    <Ron1nSparkline data={row.sparkline} trend={trendForRow(row)} />
-                  </View>
-                ) : null}
-
-                {row.status === 'LIVE' && chartMode === 'CANDLES' ? (
-                  loadingTimeframe === timeframe ? (
-                    <Text style={styles.rowMuted}>LOADING {timeframe.toUpperCase()} CANDLES…</Text>
+                {row.status === 'LIVE' ? (
+                  loadingTimeframe === timeframe && !candlesByTimeframe[timeframe]?.[row.symbol] ? (
+                    <Text style={styles.rowMuted}>LOADING {timeframe.toUpperCase()}…</Text>
                   ) : candlesByTimeframe[timeframe]?.[row.symbol] ? (
                     <View style={styles.sparklineRow}>
-                      <Ron1nCandlestick data={candlesByTimeframe[timeframe]![row.symbol]} />
+                      {chartMode === 'CANDLES' ? (
+                        <Ron1nCandlestick data={candlesByTimeframe[timeframe]![row.symbol]} />
+                      ) : (
+                        <Ron1nSparkline
+                          data={candlesByTimeframe[timeframe]![row.symbol].map((c) => c.c)}
+                          trend={trendFromCandles(candlesByTimeframe[timeframe]![row.symbol])}
+                        />
+                      )}
                     </View>
                   ) : (
                     <Text style={styles.rowMuted}>NO CHART DATA</Text>
