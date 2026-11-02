@@ -9,7 +9,7 @@ import {
   QuantumExposureRecord,
 } from '../services/QuantumExposureService';
 import { EvmAddressRotationService } from '../services/security/EvmAddressRotationService';
-import { Ron1nColors, Ron1nMonospace, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nRadii, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 const EXPOSURE_STATUS_TONE: Record<string, Ron1nStatusTone> = {
   SAFE: 'success',
@@ -171,17 +171,17 @@ export default function KeyRotationModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: Ron1nGlass.modalOverlay,
     justifyContent: 'flex-end',
   },
   card: {
     maxHeight: '85%',
-    backgroundColor: '#0A0A0A',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: Ron1nColors.surfaceElevated,
+    borderTopLeftRadius: Ron1nRadii.modal,
+    borderTopRightRadius: Ron1nRadii.modal,
     padding: 24,
-    borderWidth: 1,
-    borderColor: Ron1nColors.green,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}66`,
   },
   title: {
     color: Ron1nColors.gold,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   loadingText: {
-    color: '#888',
+    color: Ron1nColors.muted,
     textAlign: 'center',
     marginVertical: 20,
   },
@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   body: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
   },
   metaText: {
-    color: '#777',
+    color: Ron1nColors.muted,
     fontSize: 10,
     marginTop: 8,
     fontFamily: Ron1nMonospace.fontFamily,
@@ -230,9 +230,9 @@ const styles = StyleSheet.create({
   },
   feeNotice: {
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#FFD70066',
-    backgroundColor: '#FFD70012',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}12`,
     borderRadius: 14,
     padding: 12,
   },
@@ -244,9 +244,9 @@ const styles = StyleSheet.create({
   },
   rotateNowButton: {
     marginTop: 4,
-    backgroundColor: '#FFD70022',
-    borderColor: Ron1nColors.gold,
-    borderWidth: 1,
+    backgroundColor: `${Ron1nColors.gold}22`,
+    borderColor: `${Ron1nColors.gold}66`,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   rotateNowHelp: {
-    color: '#888',
+    color: Ron1nColors.muted,
     fontSize: 10,
     lineHeight: 15,
     marginTop: 8,

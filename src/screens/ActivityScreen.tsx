@@ -27,7 +27,7 @@ import {
   type TransactionLifecycleState,
 } from '../services/transactions/TransactionLifecycleService';
 import { BroadcastService } from '../services/transactions/BroadcastService';
-import { Ron1nColors, Ron1nMonospace, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nSpacing, Ron1nTypography, type Ron1nStatusTone } from '../theme/ron1nTheme';
 
 type ActivityTab = 'PRIVATE' | 'CHAIN' | 'TRANSACTIONS';
 
@@ -546,16 +546,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 13,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#333333',
-    backgroundColor: '#111111',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nGlass.border,
+    backgroundColor: Ron1nColors.surface,
   },
   activeTabButton: {
-    borderColor: '#00FF4166',
-    backgroundColor: '#00FF4115',
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}15`,
   },
   tabText: {
-    color: '#888888',
+    color: Ron1nColors.muted,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   body: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 19,
   },
@@ -579,13 +579,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderRadius: 16,
     paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#FF4D4D66',
-    backgroundColor: '#FF4D4D12',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.danger}66`,
+    backgroundColor: `${Ron1nColors.danger}12`,
     alignItems: 'center',
   },
   clearText: {
-    color: '#FF7777',
+    color: Ron1nColors.danger,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2,
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   timestamp: {
-    color: '#777777',
+    color: Ron1nColors.muted,
     fontSize: 10,
     marginTop: 6,
   },
@@ -642,17 +642,17 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     borderRadius: 999,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   okBadge: {
-    borderColor: '#00FF4166',
-    backgroundColor: '#00FF4112',
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}12`,
   },
   failedBadge: {
-    borderColor: '#FF4D4D66',
-    backgroundColor: '#FF4D4D12',
+    borderColor: `${Ron1nColors.danger}66`,
+    backgroundColor: `${Ron1nColors.danger}12`,
   },
   statusBadgeText: {
     fontSize: 9,
@@ -663,10 +663,10 @@ const styles = StyleSheet.create({
     color: Ron1nColors.green,
   },
   failedText: {
-    color: '#FF7777',
+    color: Ron1nColors.danger,
   },
   errorText: {
-    color: '#FF9999',
+    color: Ron1nColors.danger,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -691,9 +691,9 @@ const styles = StyleSheet.create({
   },
   txRow: {
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FFD70033',
-    backgroundColor: '#000000',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}33`,
+    backgroundColor: Ron1nColors.black,
     padding: 10,
   },
   txTitle: {
@@ -703,17 +703,17 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   txMeta: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginBottom: 4,
   },
   txHash: {
-    color: '#888888',
+    color: Ron1nColors.muted,
     fontSize: 10,
     fontFamily: Ron1nMonospace.fontFamily,
   },
   moreIssues: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 4,
   },

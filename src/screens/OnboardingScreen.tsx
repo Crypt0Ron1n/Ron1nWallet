@@ -16,7 +16,7 @@ import Ron1nCard from '../components/Ron1nCard';
 import Ron1nScreen from '../components/Ron1nScreen';
 import { ActivityService } from '../services/transactions/ActivityService';
 import { VaultService } from '../services/VaultService';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nRadii } from '../theme/ron1nTheme';
 
 type OnboardingScreenProps = {
   onComplete: () => void;
@@ -224,7 +224,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
               value={confirmWords[index] || ''}
               onChangeText={(value) => updateConfirmWord(index, value)}
               placeholder={`Enter word #${index + 1}`}
-              placeholderTextColor="#666666"
+              placeholderTextColor={Ron1nColors.muted}
               autoCapitalize="none"
               autoCorrect={false}
               style={styles.confirmInput}
@@ -261,7 +261,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         value={recoveryPhrase}
         onChangeText={setRecoveryPhrase}
         placeholder="Enter recovery phrase"
-        placeholderTextColor="#666666"
+        placeholderTextColor={Ron1nColors.muted}
         multiline
         autoCapitalize="none"
         autoCorrect={false}
@@ -337,12 +337,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   body: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 13,
     lineHeight: 21,
   },
   warningText: {
-    color: '#FFDD77',
+    color: Ron1nColors.gold,
     fontSize: 12,
     lineHeight: 19,
     marginBottom: 14,
@@ -357,14 +357,14 @@ const styles = StyleSheet.create({
   wordBox: {
     width: '47%',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FFD70044',
-    backgroundColor: '#000000',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}44`,
+    backgroundColor: Ron1nColors.black,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   wordNumber: {
-    color: '#777777',
+    color: Ron1nColors.muted,
     fontSize: 9,
     fontWeight: '900',
     marginBottom: 4,
@@ -389,10 +389,10 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   confirmInput: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#333333',
-    backgroundColor: '#000000',
+    borderRadius: Ron1nRadii.input,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
+    backgroundColor: Ron1nColors.inputBg,
     color: Ron1nColors.white,
     padding: 13,
     fontSize: 14,
@@ -401,9 +401,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 18,
     paddingVertical: 16,
-    backgroundColor: '#00FF4122',
-    borderWidth: 1,
-    borderColor: '#00FF4188',
+    backgroundColor: `${Ron1nColors.green}22`,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}88`,
     alignItems: 'center',
   },
   primaryText: {
@@ -416,22 +416,22 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 18,
     paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: '#444444',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
     alignItems: 'center',
   },
   secondaryText: {
-    color: '#BBBBBB',
+    color: Ron1nColors.gray,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 2,
   },
   input: {
     minHeight: 120,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#333333',
-    backgroundColor: '#000000',
+    borderRadius: Ron1nRadii.input,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
+    backgroundColor: Ron1nColors.inputBg,
     color: Ron1nColors.white,
     padding: 14,
     textAlignVertical: 'top',

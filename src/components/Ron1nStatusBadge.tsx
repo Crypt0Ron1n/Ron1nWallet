@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: Ron1nSpacing.xs,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Ron1nRadii.pill,
     paddingHorizontal: Ron1nSpacing.sm + 2,
     paddingVertical: 5,

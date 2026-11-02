@@ -93,21 +93,21 @@ export default function Ron1nTabBar({ state, descriptors, navigation }: Props) {
                 style={[
                   styles.item,
                   focused && styles.itemActive,
-                  focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm') : null,
+                  focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm', { includeElevation: false }) : null,
                 ]}
                 activeOpacity={0.8}
               >
                 <Ionicons
                   name={focused ? icons.active : icons.inactive}
                   size={22}
-                  color={focused ? Ron1nColors.neonPurple : '#B4B4C0'}
+                  color={focused ? Ron1nColors.neonPurple : Ron1nColors.muted}
                 />
 
                 <Text
                   numberOfLines={1}
                   style={[
                     styles.label,
-                    { color: focused ? Ron1nColors.white : '#B4B4C0' },
+                    { color: focused ? Ron1nColors.white : Ron1nColors.muted },
                   ]}
                 >
                   {String(label).toUpperCase()}
@@ -147,12 +147,12 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
   itemActive: {
-    backgroundColor: 'rgba(140,0,255,0.18)',
-    borderColor: 'rgba(140,0,255,0.75)',
+    backgroundColor: `${Ron1nColors.neonPurple}2E`,
+    borderColor: `${Ron1nColors.neonPurple}BF`,
   },
   label: {
     marginTop: 5,

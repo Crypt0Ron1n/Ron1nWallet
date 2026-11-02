@@ -1,11 +1,13 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import Ron1nPressable from './Ron1nPressable';
 import {
   Ron1nButtonHeight,
   Ron1nColors,
+  Ron1nGradients,
   Ron1nRadii,
   Ron1nSpacing,
   Ron1nTypography,
@@ -36,9 +38,9 @@ const VARIANT_STYLE: Record<
     text: Ron1nColors.white,
   },
   secondary: {
-    background: `${Ron1nColors.green}18`,
-    border: `${Ron1nColors.green}55`,
-    text: Ron1nColors.green,
+    background: Ron1nColors.inputBg,
+    border: Ron1nColors.border,
+    text: Ron1nColors.white,
   },
   outline: {
     background: 'transparent',
@@ -76,6 +78,7 @@ export default function Ron1nButton({
 }: Props) {
   const tone = VARIANT_STYLE[variant];
   const isInactive = disabled || busy;
+  const showGradient = variant === 'primary' && !isInactive;
 
   return (
     <Ron1nPressable
@@ -89,15 +92,23 @@ export default function Ron1nButton({
         styles.base,
         fullWidth && styles.fullWidth,
         {
-          backgroundColor: tone.background,
-          borderColor: tone.border,
+          backgroundColor: isInactive ? Ron1nColors.pressed : tone.background,
+          borderColor: isInactive ? Ron1nColors.border : tone.border,
         },
+        showGradient && styles.gradientClip,
         // Glow is reserved for the primary call-to-action only - every other
         // variant (secondary/outline/danger/ghost) stays flat on purpose.
-        variant === 'primary' && !isInactive ? ron1nGlow(Ron1nColors.neonPurple, 'md') : null,
-        isInactive && styles.inactive,
+        showGradient ? ron1nGlow(Ron1nColors.neonPurple, 'md') : null,
       ]}
     >
+      {showGradient ? (
+        <LinearGradient
+          colors={Ron1nGradients.primaryButton}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      ) : null}
       <View style={styles.content}>
         {busy ? (
           <ActivityIndicator size="small" color={tone.text} />
@@ -130,8 +141,8 @@ export default function Ron1nButton({
 const styles = StyleSheet.create({
   base: {
     height: Ron1nButtonHeight,
-    borderRadius: Ron1nRadii.md,
-    borderWidth: 1,
+    borderRadius: Ron1nRadii.button,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Ron1nSpacing.lg,
@@ -139,13 +150,14 @@ const styles = StyleSheet.create({
   fullWidth: {
     alignSelf: 'stretch',
   },
-  inactive: {
-    opacity: 0.55,
+  gradientClip: {
+    overflow: 'hidden',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   icon: {
     marginRight: Ron1nSpacing.sm,

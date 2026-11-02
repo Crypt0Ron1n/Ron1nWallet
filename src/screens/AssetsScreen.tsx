@@ -11,7 +11,7 @@ import {
   type Ron1nAssetCategory,
   type Ron1nAssetConfig,
 } from '../config/assetCatalog';
-import { Ron1nColors, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 const GROUPS: { category: Ron1nAssetCategory; title: string; caption: string }[] = [
   { category: 'Native', title: 'NATIVE WALLETS', caption: 'Each has its own address and key derivation.' },
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Ron1nSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C22',
+    borderBottomColor: Ron1nGlass.border,
   },
   rowMain: {
     flex: 1,

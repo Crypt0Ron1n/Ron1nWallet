@@ -3,7 +3,7 @@ import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Ron1nPressable from './Ron1nPressable';
-import { Ron1nColors, Ron1nGlass, Ron1nMonospace } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nRadii } from '../theme/ron1nTheme';
 import { getAssetVisual } from '../config/assetVisuals';
 
 type Props = {
@@ -162,7 +162,7 @@ export default function Ron1nAssetCard({
             onPress={onRotatePress}
             style={[
               styles.rotateBadge,
-              { borderColor: needsRotation ? Ron1nColors.gold : '#444' },
+              { borderColor: needsRotation ? Ron1nColors.gold : Ron1nColors.disabled },
             ]}
             accessibilityRole="button"
             accessibilityLabel={`Rotate ${symbol} address`}
@@ -170,7 +170,7 @@ export default function Ron1nAssetCard({
             <Text
               style={[
                 styles.action,
-                { color: needsRotation ? Ron1nColors.gold : '#888' },
+                { color: needsRotation ? Ron1nColors.gold : Ron1nColors.muted },
               ]}
             >
               ROTATE
@@ -185,10 +185,10 @@ export default function Ron1nAssetCard({
 const styles = StyleSheet.create({
   card: {
     minHeight: 112,
-    borderRadius: 20,
+    borderRadius: Ron1nRadii.card,
     padding: 14,
     marginBottom: 12,
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
     backgroundColor: Ron1nGlass.surfaceElevated,
     flexDirection: 'row',
     alignItems: 'center',
@@ -198,13 +198,13 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   pulseGlow: {
-    borderRadius: 20,
+    borderRadius: Ron1nRadii.card,
   },
   iconWrap: {
     width: 56,
     height: 56,
     borderRadius: 18,
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   address: {
-    color: '#C5C5D0',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 4,
     fontFamily: Ron1nMonospace.fontFamily,
@@ -253,11 +253,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   metaText: {
-    color: '#C2C2CC',
+    color: Ron1nColors.gray,
     fontSize: 10,
   },
   metaDot: {
-    color: '#666673',
+    color: Ron1nColors.muted,
     fontSize: 10,
   },
   securityLabel: {
@@ -284,23 +284,23 @@ const styles = StyleSheet.create({
     minWidth: 68,
     minHeight: 32,
     paddingHorizontal: 8,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    backgroundColor: '#000000',
+    backgroundColor: Ron1nColors.black,
   },
   rotateBadge: {
     minWidth: 68,
     minHeight: 32,
     paddingHorizontal: 8,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    backgroundColor: '#000000',
+    backgroundColor: Ron1nColors.black,
   },
   action: {
     fontSize: 10,

@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import Ron1nButton from './Ron1nButton';
 import Ron1nStatusBadge from './Ron1nStatusBadge';
-import { Ron1nColors, Ron1nMonospace, Ron1nRadii, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nRadii, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 export type AssetInfo = {
   symbol: string;
@@ -53,7 +53,7 @@ export default function ReceiveModal({ visible, onClose, asset, onRotatePress }:
         <SafeAreaView edges={['bottom']} style={styles.modalContainer}>
           <LinearGradient
             pointerEvents="none"
-            colors={['#B026FF22', '#B026FF00']}
+            colors={[`${Ron1nColors.neonPurple}22`, `${Ron1nColors.neonPurple}00`]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={styles.headerGlow}
@@ -161,19 +161,19 @@ export default function ReceiveModal({ visible, onClose, asset, onRotatePress }:
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    backgroundColor: Ron1nGlass.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalContainer: {
     maxHeight: '88%',
-    backgroundColor: '#0A0A0A',
-    borderTopLeftRadius: Ron1nRadii.lg,
-    borderTopRightRadius: Ron1nRadii.lg,
+    backgroundColor: Ron1nColors.surfaceElevated,
+    borderTopLeftRadius: Ron1nRadii.modal,
+    borderTopRightRadius: Ron1nRadii.modal,
     paddingHorizontal: Ron1nSpacing.xl,
     paddingTop: Ron1nSpacing.sm,
     paddingBottom: Ron1nSpacing.lg,
-    borderWidth: 1,
-    borderColor: '#B026FF',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.neonPurple}66`,
     overflow: 'hidden',
   },
   headerGlow: {
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     ...Ron1nTypography.bodySecondary,
-    color: '#9B9BA8',
+    color: Ron1nColors.gray,
     textAlign: 'center',
     marginTop: Ron1nSpacing.xs,
     maxWidth: 260,
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
     padding: Ron1nSpacing.lg,
     backgroundColor: '#FFFFFF',
     borderRadius: Ron1nRadii.md,
-    borderWidth: 2,
-    borderColor: '#00FF41',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}66`,
     marginBottom: Ron1nSpacing.md,
   },
   addressContainer: {
     width: '100%',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: Ron1nColors.surface,
     padding: Ron1nSpacing.lg,
     borderRadius: Ron1nRadii.sm,
     marginTop: Ron1nSpacing.md,
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   },
   networkWarning: {
     ...Ron1nTypography.caption,
-    color: '#FF3366',
+    color: Ron1nColors.red,
     textAlign: 'center',
     marginBottom: Ron1nSpacing.sm,
   },
   addressText: {
-    color: '#00FF41',
+    color: Ron1nColors.green,
     fontSize: 13,
     textAlign: 'center',
     fontFamily: Ron1nMonospace.fontFamily,
@@ -250,14 +250,14 @@ const styles = StyleSheet.create({
   },
   rotationNotice: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: '#FFD700',
-    backgroundColor: '#1A1300',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}0D`,
     borderRadius: Ron1nRadii.sm,
     padding: Ron1nSpacing.md,
   },
   rotationNoticeText: {
-    color: '#FFD700',
+    color: Ron1nColors.gold,
     fontSize: 10,
     lineHeight: 16,
   },

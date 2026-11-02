@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   body: {
     ...Ron1nTypography.body,
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
   },
   ruleRow: {
     flexDirection: 'row',
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     width: 22,
   },
   ruleText: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
     flex: 1,

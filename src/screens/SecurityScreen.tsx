@@ -90,7 +90,7 @@ function exposureStatusText(level: ExposureLevel) {
 function rotationStatusColor(status: RotationPrepStatus) {
   if (status === 'PREPARED') return Ron1nColors.gold;
   if (status === 'COMPLETED') return Ron1nColors.green;
-  return '#999999';
+  return Ron1nColors.muted;
 }
 
 export default function SecurityScreen() {
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   scoreDetail: {
-    color: '#888888',
+    color: Ron1nColors.muted,
     fontSize: 11,
     lineHeight: 17,
     textAlign: 'center',
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   cardText: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 12,
     marginTop: 10,
     lineHeight: 18,
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#000',
+    color: Ron1nColors.black,
     fontSize: 11,
     fontWeight: '900',
   },
@@ -721,9 +721,9 @@ const styles = StyleSheet.create({
   metricBox: {
     flex: 1,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#00FF4133',
-    backgroundColor: '#00FF4110',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}33`,
+    backgroundColor: `${Ron1nColors.green}10`,
     padding: 12,
     alignItems: 'center',
   },
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   metricLabel: {
-    color: '#999999',
+    color: Ron1nColors.muted,
     fontSize: 9,
     marginTop: 4,
     fontWeight: '900',
@@ -765,9 +765,9 @@ const styles = StyleSheet.create({
     color: Ron1nColors.green,
     fontSize: 10,
     fontWeight: '900',
-    borderWidth: 1,
-    borderColor: '#00FF4144',
-    backgroundColor: '#00FF4110',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}44`,
+    backgroundColor: `${Ron1nColors.green}10`,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   recommendation: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 8,
@@ -788,9 +788,9 @@ const styles = StyleSheet.create({
   rotationButton: {
     marginTop: 16,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#FFD70088',
-    backgroundColor: '#FFD70018',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}88`,
+    backgroundColor: `${Ron1nColors.gold}18`,
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   unknownNote: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     lineHeight: 17,
     marginTop: 14,
@@ -834,9 +834,9 @@ const styles = StyleSheet.create({
   },
   rotationPrepCard: {
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#FFD70033',
-    backgroundColor: '#000000',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}33`,
+    backgroundColor: Ron1nColors.black,
     padding: 14,
   },
   rotationPrepHeader: {
@@ -864,13 +864,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   rotationReason: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 12,
   },
   rotationSafety: {
-    color: '#888888',
+    color: Ron1nColors.muted,
     fontSize: 11,
     lineHeight: 17,
     marginTop: 10,
@@ -884,21 +884,21 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#777777',
+    borderColor: Ron1nColors.muted,
     paddingVertical: 10,
     alignItems: 'center',
   },
   dismissButtonText: {
-    color: '#BBBBBB',
+    color: Ron1nColors.gray,
     fontSize: 10,
     fontWeight: '900',
   },
   completeButton: {
     flex: 1,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#00FF4166',
-    backgroundColor: '#00FF4110',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}10`,
     paddingVertical: 10,
     alignItems: 'center',
   },
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   activityDetail: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 6,
   },

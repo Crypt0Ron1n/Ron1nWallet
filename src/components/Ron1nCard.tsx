@@ -34,7 +34,16 @@ export default function Ron1nCard({ children, variant = 'glass', glow = 'none' }
         styles.card,
         variant === 'elevated' ? styles.elevated : styles.glass,
         glowStyle,
-        glowStyle ? { borderColor: `${GLOW_COLOR[glow as Exclude<Ron1nCardGlow, 'none'>]}55` } : null,
+        // Thinner than the default 1px border - a saturated edge color reads
+        // as "colored line" more than "surface outline" at full weight, so
+        // glow borders stay a hairline while the shadow still carries the
+        // illumination.
+        glowStyle
+          ? {
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: `${GLOW_COLOR[glow as Exclude<Ron1nCardGlow, 'none'>]}55`,
+            }
+          : null,
       ]}
       accessible
       accessibilityRole="summary"
@@ -47,15 +56,16 @@ export default function Ron1nCard({ children, variant = 'glass', glow = 'none' }
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderRadius: Ron1nRadii.lg,
     padding: Ron1nSpacing.lg + 2,
     marginBottom: Ron1nSpacing.lg,
   },
   glass: {
+    borderRadius: Ron1nRadii.card,
     backgroundColor: Ron1nGlass.surface,
     borderColor: Ron1nGlass.border,
   },
   elevated: {
+    borderRadius: Ron1nRadii.cardLarge,
     backgroundColor: Ron1nGlass.surfaceElevated,
     borderColor: Ron1nGlass.borderStrong,
   },

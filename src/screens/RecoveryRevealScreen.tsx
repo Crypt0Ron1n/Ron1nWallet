@@ -14,7 +14,7 @@ import Ron1nScreen from '../components/Ron1nScreen';
 import Ron1nCard from '../components/Ron1nCard';
 import { CryptoCore } from '../services/crypto/CryptoCore';
 import { ActivityService } from '../services/transactions/ActivityService';
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass } from '../theme/ron1nTheme';
 
 interface Props {
   onBack: () => void;
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     fontFamily: 'KatakanaStyle',
   },
   warningTitle: {
-    color: '#FF4141',
+    color: Ron1nColors.danger,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 2,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     fontFamily: 'KatakanaStyle',
   },
   warningText: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -160,9 +160,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   revealButton: {
-    backgroundColor: '#FFD70015',
-    borderColor: Ron1nColors.gold,
-    borderWidth: 1.5,
+    backgroundColor: `${Ron1nColors.gold}15`,
+    borderColor: `${Ron1nColors.gold}66`,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
   },
   wordBox: {
     width: '30%',
-    backgroundColor: '#111',
-    borderColor: '#333',
+    backgroundColor: Ron1nColors.surface,
+    borderColor: Ron1nGlass.border,
     borderWidth: 1,
     borderRadius: 8,
     padding: 8,
@@ -212,16 +212,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   hideButton: {
-    backgroundColor: '#FF414122',
-    borderColor: '#FF4141',
-    borderWidth: 1.5,
+    backgroundColor: `${Ron1nColors.danger}22`,
+    borderColor: `${Ron1nColors.danger}66`,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 20,
   },
   hideButtonText: {
-    color: '#FF4141',
+    color: Ron1nColors.danger,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 2,

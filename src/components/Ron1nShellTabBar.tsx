@@ -50,16 +50,16 @@ export default function Ron1nShellTabBar({ active, onSelect }: Props) {
               style={[
                 styles.item,
                 focused && styles.itemActive,
-                focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm') : null,
+                focused ? ron1nGlow(Ron1nColors.neonPurple, 'sm', { includeElevation: false }) : null,
               ]}
               activeOpacity={0.85}
             >
               <Ionicons
                 name={focused ? icons.active : icons.inactive}
                 size={19}
-                color={focused ? Ron1nColors.neonPurple : '#8A8A96'}
+                color={focused ? Ron1nColors.neonPurple : Ron1nColors.muted}
               />
-              <Text style={[styles.label, { color: focused ? Ron1nColors.white : '#8A8A96' }]}>
+              <Text style={[styles.label, { color: focused ? Ron1nColors.white : Ron1nColors.muted }]}>
                 {route.toUpperCase()}
               </Text>
             </TouchableOpacity>
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   itemActive: {
-    backgroundColor: 'rgba(176,38,255,0.16)',
+    backgroundColor: `${Ron1nColors.neonPurple}29`,
   },
   label: {
     fontSize: 10,

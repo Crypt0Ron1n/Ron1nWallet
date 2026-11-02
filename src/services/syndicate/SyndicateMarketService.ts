@@ -1,5 +1,13 @@
 import { PriceService } from '../PriceService';
 import { RON1N_ASSETS, resolveNetworkIdentifier } from '../../config/assetCatalog';
+import { pointsToCandles, type Candle } from '../../utils/candlestickMath';
+
+export type SyndicateCandleTimeframe = '5m' | '15m' | '4h';
+
+const TIMEFRAME_BUCKET_MS: Record<'5m' | '15m', number> = {
+  '5m': 5 * 60 * 1000,
+  '15m': 15 * 60 * 1000,
+};
 
 export type SyndicateMarketRow = {
   symbol: string;
@@ -65,5 +73,47 @@ export class SyndicateMarketService {
       rows: this.buildRows(prices),
       refreshedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Real candles for every catalog asset, keyed by symbol, for the
+   * Syndicate market view's candlestick toggle. Deliberately separate from
+   * `loadLive()`/`buildRows()` and fetched lazily - only when the user
+   * switches to candle view (and again per timeframe the first time it's
+   * selected) - never on every price refresh. A symbol absent from the
+   * result means no real data was available for that timeframe; callers
+   * must render that as "no chart data", never a synthesized candle.
+   *
+   * '4h' uses CoinGecko's native OHLC endpoint (7-day window, which
+   * CoinGecko itself buckets into 4-hour candles). '5m' and '15m' have no
+   * selectable-interval OHLC endpoint on the free tier, so they are
+   * genuinely derived (via candlestickMath.pointsToCandles) from a real,
+   * confirmed 5-minute point-sampled price series - not fabricated, see
+   * PriceService.getFineGrainedPrices.
+   */
+  static async loadCandles(timeframe: SyndicateCandleTimeframe): Promise<Record<string, Candle[]>> {
+    const symbols = RON1N_ASSETS.map((asset) => asset.symbol);
+
+    if (timeframe === '4h') {
+      const ohlc = await PriceService.getOhlc(symbols);
+      const candles: Record<string, Candle[]> = {};
+      for (const [symbol, bars] of Object.entries(ohlc)) {
+        candles[symbol] = bars.map(({ o, h, l, c }) => ({ o, h, l, c }));
+      }
+      return candles;
+    }
+
+    const bucketMs = TIMEFRAME_BUCKET_MS[timeframe];
+    const pointSeries = await PriceService.getFineGrainedPrices(symbols);
+
+    const candles: Record<string, Candle[]> = {};
+    for (const [symbol, points] of Object.entries(pointSeries)) {
+      const resampled = pointsToCandles(points, bucketMs);
+      if (resampled.length > 0) {
+        candles[symbol] = resampled;
+      }
+    }
+
+    return candles;
   }
 }

@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 
-import { Ron1nColors } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nRadii } from '../theme/ron1nTheme';
 
 type ManualSyncConsentModalProps = {
   visible: boolean;
@@ -56,18 +56,18 @@ export default function ManualSyncConsentModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: '#000000CC',
+    backgroundColor: Ron1nGlass.modalOverlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 22,
   },
   card: {
     width: '100%',
-    backgroundColor: '#070707',
-    borderRadius: 26,
+    backgroundColor: Ron1nColors.surfaceElevated,
+    borderRadius: Ron1nRadii.modal,
     padding: 24,
-    borderWidth: 1,
-    borderColor: '#00FF4166',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}66`,
   },
   kicker: {
     color: Ron1nColors.green,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   body: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 13,
     lineHeight: 21,
     marginBottom: 12,
@@ -97,21 +97,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#333',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
     alignItems: 'center',
   },
   confirmButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#00FF4122',
-    borderWidth: 1,
-    borderColor: '#00FF4188',
+    backgroundColor: `${Ron1nColors.green}22`,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}88`,
     alignItems: 'center',
   },
   cancelText: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 1,

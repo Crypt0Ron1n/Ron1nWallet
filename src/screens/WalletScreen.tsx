@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     padding: 22,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${Ron1nColors.purple}55`,
     shadowColor: Ron1nColors.purple,
     shadowOffset: { width: 0, height: 6 },
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   heroBody: {
-    color: '#9B9BA8',
+    color: Ron1nColors.gray,
     fontSize: 11,
     lineHeight: 16,
     marginTop: 8,
@@ -907,7 +907,7 @@ const styles = StyleSheet.create({
   metricDivider: {
     width: 1,
     height: 35,
-    backgroundColor: '#2C2C35',
+    backgroundColor: Ron1nColors.pressed,
     marginHorizontal: 15,
   },
   actionRow: {
@@ -923,7 +923,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Ron1nGlass.surface,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Ron1nGlass.border,
   },
   actionPrimary: {
@@ -945,7 +945,7 @@ const styles = StyleSheet.create({
     marginTop: 7,
   },
   actionCaption: {
-    color: '#6F6F7A',
+    color: Ron1nColors.muted,
     fontSize: 7,
     textAlign: 'center',
     marginTop: 4,
@@ -980,7 +980,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   modeCaption: {
-    color: '#747480',
+    color: Ron1nColors.muted,
     fontSize: 8,
     marginTop: 3,
   },
@@ -1005,7 +1005,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   sectionCaption: {
-    color: '#70707B',
+    color: Ron1nColors.muted,
     fontSize: 8,
     marginTop: 3,
   },
@@ -1019,12 +1019,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     backgroundColor: `${Ron1nColors.green}10`,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${Ron1nColors.green}44`,
   },
   syncButtonDisabled: {
-    backgroundColor: '#111116',
-    borderColor: '#292930',
+    backgroundColor: Ron1nColors.surface,
+    borderColor: Ron1nColors.pressed,
   },
   syncButtonText: {
     color: Ron1nColors.green,
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusBody: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     lineHeight: 18,
     marginTop: 3,
@@ -1059,9 +1059,9 @@ const styles = StyleSheet.create({
   },
   issueRow: {
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FF777744',
-    backgroundColor: '#FF4D4D12',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.danger}44`,
+    backgroundColor: `${Ron1nColors.danger}12`,
     padding: 9,
   },
   issueHeader: {
@@ -1071,13 +1071,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   issueSymbol: {
-    color: '#FF9999',
+    color: Ron1nColors.danger,
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1.5,
   },
   issueText: {
-    color: '#DDDDDD',
+    color: Ron1nColors.gray,
     fontSize: 10,
     lineHeight: 15,
   },
@@ -1088,7 +1088,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   emptyText: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 7,
@@ -1099,9 +1099,9 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     padding: 13,
     marginTop: 8,
-    backgroundColor: '#FFD7000A',
-    borderWidth: 1,
-    borderColor: '#FFD7002A',
+    backgroundColor: `${Ron1nColors.gold}0A`,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}2A`,
   },
   securityStripText: {
     flex: 1,
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   securityStripBody: {
-    color: '#777784',
+    color: Ron1nColors.muted,
     fontSize: 8,
     lineHeight: 13,
     marginTop: 3,

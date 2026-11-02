@@ -12,6 +12,8 @@ import Ron1nStatusBadge from '../components/Ron1nStatusBadge';
 import Ron1nEmptyState from '../components/Ron1nEmptyState';
 import Ron1nButton from '../components/Ron1nButton';
 import Ron1nSparkline from '../components/Ron1nSparkline';
+import Ron1nCandlestick from '../components/Ron1nCandlestick';
+import type { Candle } from '../utils/candlestickMath';
 import { VaultService } from '../services/VaultService';
 import { PrivacyModeService } from '../services/PrivacyModeService';
 import { ActivityService, type Ron1nActivity } from '../services/transactions/ActivityService';
@@ -22,6 +24,7 @@ import { PrivacyAssessmentService } from '../services/privacy/PrivacyAssessmentS
 import type { PrivacyLevel } from '../services/privacy/PrivacyTypes';
 import {
   SyndicateMarketService,
+  type SyndicateCandleTimeframe,
   type SyndicateMarketRow,
 } from '../services/syndicate/SyndicateMarketService';
 import {
@@ -104,6 +107,12 @@ export default function SyndicateScreen() {
   const [marketRows, setMarketRows] = useState<SyndicateMarketRow[]>([]);
   const [marketLoading, setMarketLoading] = useState(true);
   const [marketRefreshedAt, setMarketRefreshedAt] = useState<string | null>(null);
+  const [chartMode, setChartMode] = useState<'LINE' | 'CANDLES'>('LINE');
+  const [timeframe, setTimeframe] = useState<SyndicateCandleTimeframe>('4h');
+  const [candlesByTimeframe, setCandlesByTimeframe] = useState<
+    Partial<Record<SyndicateCandleTimeframe, Record<string, Candle[]>>>
+  >({});
+  const [loadingTimeframe, setLoadingTimeframe] = useState<SyndicateCandleTimeframe | null>(null);
   const [activities, setActivities] = useState<Ron1nActivity[]>([]);
   const [exposureLevel, setExposureLevel] = useState<ExposureLevel | null>(null);
   const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel | null>(null);
@@ -158,6 +167,45 @@ export default function SyndicateScreen() {
       setMarketLoading(false);
     }
   }, []);
+
+  const loadTimeframeCandles = useCallback(
+    (tf: SyndicateCandleTimeframe) => {
+      setLoadingTimeframe(tf);
+
+      SyndicateMarketService.loadCandles(tf)
+        .then((result) => {
+          setCandlesByTimeframe((prev) => ({ ...prev, [tf]: result }));
+        })
+        .catch((error) => {
+          console.error('Failed to load Syndicate candle data:', error);
+          setCandlesByTimeframe((prev) => ({ ...prev, [tf]: {} }));
+        })
+        .finally(() => setLoadingTimeframe((current) => (current === tf ? null : current)));
+    },
+    []
+  );
+
+  const handleSelectChartMode = useCallback(
+    (mode: 'LINE' | 'CANDLES') => {
+      setChartMode(mode);
+
+      if (mode === 'CANDLES' && !candlesByTimeframe[timeframe]) {
+        loadTimeframeCandles(timeframe);
+      }
+    },
+    [candlesByTimeframe, timeframe, loadTimeframeCandles]
+  );
+
+  const handleSelectTimeframe = useCallback(
+    (tf: SyndicateCandleTimeframe) => {
+      setTimeframe(tf);
+
+      if (!candlesByTimeframe[tf]) {
+        loadTimeframeCandles(tf);
+      }
+    },
+    [candlesByTimeframe, loadTimeframeCandles]
+  );
 
   useEffect(() => {
     void load();
@@ -243,6 +291,52 @@ export default function SyndicateScreen() {
             </Text>
           ) : null}
         </View>
+
+        <View style={styles.chartModeToggle}>
+          {(['LINE', 'CANDLES'] as const).map((mode) => (
+            <TouchableOpacity
+              key={mode}
+              style={[styles.chartModeOption, chartMode === mode && styles.chartModeOptionActive]}
+              onPress={() => handleSelectChartMode(mode)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityState={{ selected: chartMode === mode }}
+              accessibilityLabel={`${mode === 'LINE' ? 'Line chart' : 'Candlestick chart'} view`}
+            >
+              <Text
+                style={[
+                  styles.chartModeOptionText,
+                  chartMode === mode && styles.chartModeOptionTextActive,
+                ]}
+              >
+                {mode === 'LINE' ? 'LINE' : 'CANDLES'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {chartMode === 'CANDLES' ? (
+          <View style={styles.timeframeRow}>
+            {(['5m', '15m', '4h'] as const).map((tf) => (
+              <TouchableOpacity
+                key={tf}
+                style={[styles.timeframeOption, timeframe === tf && styles.timeframeOptionActive]}
+                onPress={() => handleSelectTimeframe(tf)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityState={{ selected: timeframe === tf }}
+                accessibilityLabel={`${tf} candles`}
+              >
+                <Text
+                  style={[styles.timeframeOptionText, timeframe === tf && styles.timeframeOptionTextActive]}
+                >
+                  {tf.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
         <Ron1nCard glow="cyan">
           {marketLoading ? (
             <Text style={styles.rowMuted}>LOADING MARKET DATA…</Text>
@@ -294,10 +388,22 @@ export default function SyndicateScreen() {
                   </View>
                 </View>
 
-                {row.status === 'LIVE' && row.sparkline ? (
+                {row.status === 'LIVE' && chartMode === 'LINE' && row.sparkline ? (
                   <View style={styles.sparklineRow}>
                     <Ron1nSparkline data={row.sparkline} trend={trendForRow(row)} />
                   </View>
+                ) : null}
+
+                {row.status === 'LIVE' && chartMode === 'CANDLES' ? (
+                  loadingTimeframe === timeframe ? (
+                    <Text style={styles.rowMuted}>LOADING {timeframe.toUpperCase()} CANDLES…</Text>
+                  ) : candlesByTimeframe[timeframe]?.[row.symbol] ? (
+                    <View style={styles.sparklineRow}>
+                      <Ron1nCandlestick data={candlesByTimeframe[timeframe]![row.symbol]} />
+                    </View>
+                  ) : (
+                    <Text style={styles.rowMuted}>NO CHART DATA</Text>
+                  )
                 ) : null}
 
                 <View style={styles.assetBadgeRow}>
@@ -428,10 +534,60 @@ const styles = StyleSheet.create({
     color: Ron1nColors.muted,
     marginBottom: Ron1nSpacing.sm,
   },
+  chartModeToggle: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    backgroundColor: Ron1nGlass.surface,
+    borderWidth: 1,
+    borderColor: Ron1nGlass.border,
+    borderRadius: 999,
+    padding: 3,
+    marginBottom: Ron1nSpacing.sm,
+    gap: 2,
+  },
+  chartModeOption: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+  },
+  chartModeOptionActive: {
+    backgroundColor: `${Ron1nColors.cyan}22`,
+  },
+  chartModeOptionText: {
+    ...Ron1nTypography.label,
+    fontSize: 9,
+    color: Ron1nColors.muted,
+  },
+  chartModeOptionTextActive: {
+    color: Ron1nColors.cyan,
+  },
+  timeframeRow: {
+    flexDirection: 'row',
+    gap: Ron1nSpacing.xs,
+    marginBottom: Ron1nSpacing.sm,
+  },
+  timeframeOption: {
+    paddingVertical: 5,
+    paddingHorizontal: 11,
+    borderRadius: 999,
+    backgroundColor: Ron1nGlass.surface,
+  },
+  timeframeOptionActive: {
+    backgroundColor: `${Ron1nColors.cyan}18`,
+  },
+  timeframeOptionText: {
+    ...Ron1nTypography.caption,
+    fontSize: 9,
+    fontWeight: '800',
+    color: Ron1nColors.muted,
+  },
+  timeframeOptionTextActive: {
+    color: Ron1nColors.cyan,
+  },
   assetRow: {
     paddingVertical: Ron1nSpacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C22',
+    borderBottomColor: Ron1nGlass.border,
     gap: Ron1nSpacing.xs,
   },
   assetRowTop: {
@@ -458,7 +614,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Ron1nSpacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C22',
+    borderBottomColor: Ron1nGlass.border,
   },
   rowLabel: {
     ...Ron1nTypography.body,
@@ -486,7 +642,7 @@ const styles = StyleSheet.create({
     gap: Ron1nSpacing.sm + 2,
     paddingVertical: Ron1nSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C1C22',
+    borderBottomColor: Ron1nGlass.border,
   },
   activityText: { flex: 1 },
   footerButton: {

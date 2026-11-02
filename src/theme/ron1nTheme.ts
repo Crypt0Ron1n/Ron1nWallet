@@ -8,6 +8,8 @@ export const Ron1nColors = {
   surfaceElevated: '#111118',
   card: 'rgba(255,255,255,0.045)',
   border: 'rgba(255,255,255,0.12)',
+  inputBg: '#22232D',
+  pressed: '#292936',
 
   // Ron1n primary purple hierarchy
   deepPurple: '#240046',
@@ -45,6 +47,9 @@ export const Ron1nGradients = {
   vault: ['#050505', '#0B1020', '#003B1F'] as const,
   purple: ['#240046', '#8C00FF', '#B026FF'] as const,
   green: ['#003B1F', '#00A83B', '#00FF41'] as const,
+  /** Primary CTA fill only - defined once and reused so no screen/button
+   * instance ever constructs a gradient array inline in render. */
+  primaryButton: ['#B026FF', '#8C00FF', '#240046'] as const,
 };
 
 /**
@@ -72,6 +77,9 @@ export const Ron1nGlass = {
    * bar) rather than sitting in normal document flow - needs enough
    * opacity to stay legible against whatever scrolls underneath it. */
   overlay: '#0A0A0DE6',
+  /** Backdrop behind a modal/bottom-sheet, distinct from `overlay` above
+   * (which is for chrome floating over scrolling content, not a backdrop). */
+  modalOverlay: 'rgba(0,0,0,0.68)',
 } as const;
 
 /**
@@ -82,15 +90,29 @@ export const Ron1nGlass = {
  * 28, so this is a best-effort glow there and a true colored shadow on iOS;
  * neither platform is left with a broken/clipped shape.
  */
-export function ron1nGlow(color: string, intensity: 'sm' | 'md' | 'lg' = 'md') {
+/**
+ * `includeElevation` defaults to true for a standalone card/button, but
+ * must be passed `false` for an item inside a tightly-packed row of touch
+ * targets (e.g. a tab bar): Android's `elevation` Z-translates that one
+ * sibling, which can intercept touches meant for its neighbors - exactly
+ * the "button next to the active one stops responding" bug. In that
+ * context the color/background/icon/label change already communicates the
+ * active state; the shadow becomes iOS-only polish, never a functional cue.
+ */
+export function ron1nGlow(
+  color: string,
+  intensity: 'sm' | 'md' | 'lg' = 'md',
+  options: { includeElevation?: boolean } = {}
+) {
   const scale = { sm: { opacity: 0.18, radius: 8, elevation: 3 }, md: { opacity: 0.26, radius: 14, elevation: 6 }, lg: { opacity: 0.34, radius: 20, elevation: 9 } }[intensity];
+  const includeElevation = options.includeElevation ?? true;
 
   return {
     shadowColor: color,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: scale.opacity,
     shadowRadius: scale.radius,
-    elevation: scale.elevation,
+    ...(includeElevation ? { elevation: scale.elevation } : null),
   } as const;
 }
 
@@ -129,6 +151,14 @@ export const Ron1nRadii = {
   md: 16,
   lg: 20,
   pill: 999,
+  /** Exact values from the Premium Glass visual brief - kept distinct from
+   * the general sm/md/lg scale above since existing call sites depend on
+   * those staying put. */
+  button: 13,
+  input: 12,
+  card: 18,
+  cardLarge: 22,
+  modal: 26,
 } as const;
 
 export const Ron1nButtonHeight = 52;

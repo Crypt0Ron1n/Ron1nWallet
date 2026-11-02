@@ -36,7 +36,7 @@ import { SecurityPolicyService } from '../services/SecurityPolicyService';
 import type { SecurityPolicyResult } from '../services/SecurityPolicyEngine';
 import type { TransactionIntent } from '../services/transactions/TransactionIntent';
 import type { SignedPayload } from '../services/crypto/types';
-import { Ron1nColors, Ron1nMonospace, type Ron1nStatusTone } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nRadii, type Ron1nStatusTone } from '../theme/ron1nTheme';
 import { ProtectBeforeSendService } from '../services/security/ProtectBeforeSendService';
 import { IdentityRegistryService } from '../services/identity/IdentityRegistryService';
 
@@ -629,7 +629,7 @@ export default function SendScreen() {
               value={recipient}
               onChangeText={setRecipient}
               placeholder="Paste address"
-              placeholderTextColor="#555"
+              placeholderTextColor={Ron1nColors.muted}
               autoCapitalize="none"
             />
 
@@ -639,7 +639,7 @@ export default function SendScreen() {
               value={amountAsset}
               onChangeText={setAmountAsset}
               placeholder={`0.00 ${asset.symbol}`}
-              placeholderTextColor="#555"
+              placeholderTextColor={Ron1nColors.muted}
               keyboardType="decimal-pad"
               autoCapitalize="none"
             />
@@ -654,7 +654,7 @@ export default function SendScreen() {
               value={amountUsd}
               onChangeText={setAmountUsd}
               placeholder="100.00"
-              placeholderTextColor="#555"
+              placeholderTextColor={Ron1nColors.muted}
               keyboardType="decimal-pad"
             />
 
@@ -903,9 +903,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   selectorButton: {
-    borderWidth: 1,
-    borderColor: '#00D4FF55',
-    backgroundColor: '#00D4FF10',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.blue}55`,
+    backgroundColor: `${Ron1nColors.blue}10`,
     borderRadius: 16,
     padding: 16,
     flexDirection: 'row',
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   selectorName: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 5,
   },
@@ -929,9 +929,9 @@ const styles = StyleSheet.create({
   },
   rotationWarningBox: {
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: Ron1nColors.gold,
-    backgroundColor: '#1A1300',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}0D`,
     borderRadius: 14,
     padding: 12,
   },
@@ -942,9 +942,9 @@ const styles = StyleSheet.create({
   },
   rotationTriggerButton: {
     marginTop: 10,
-    borderWidth: 1,
-    borderColor: Ron1nColors.gold,
-    backgroundColor: '#1A1300',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}0D`,
     borderRadius: 12,
     paddingVertical: 10,
     alignItems: 'center',
@@ -961,16 +961,16 @@ const styles = StyleSheet.create({
   },
   modeButton: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#333',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
     borderRadius: 14,
     paddingVertical: 12,
     alignItems: 'center',
-    backgroundColor: '#080808',
+    backgroundColor: Ron1nColors.inputBg,
   },
   modeButtonActive: {
-    borderColor: Ron1nColors.green,
-    backgroundColor: '#00FF4115',
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}15`,
   },
   modeButtonText: {
     color: Ron1nColors.gray,
@@ -981,33 +981,33 @@ const styles = StyleSheet.create({
     color: Ron1nColors.green,
   },
   modeHelp: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     marginTop: 10,
     fontSize: 11,
     lineHeight: 17,
   },
   amountHelp: {
-    color: '#777777',
+    color: Ron1nColors.muted,
     fontSize: 10,
     lineHeight: 16,
     marginTop: 7,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#222',
-    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
+    borderRadius: Ron1nRadii.input,
     padding: 14,
     color: Ron1nColors.white,
-    backgroundColor: '#080808',
+    backgroundColor: Ron1nColors.inputBg,
     fontFamily: Ron1nMonospace.fontFamily,
   },
   quoteBox: {
     marginTop: 18,
     padding: 14,
-    backgroundColor: '#111',
+    backgroundColor: Ron1nColors.surface,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#00D4FF44',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.blue}44`,
   },
   quoteTitle: {
     color: Ron1nColors.blue,
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   quoteLabel: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
   },
   quoteLabelStrong: {
@@ -1048,7 +1048,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: Ron1nColors.border,
     marginTop: 12,
   },
   reviewButton: {
@@ -1065,9 +1065,9 @@ const styles = StyleSheet.create({
   },
   warningCard: {
     marginTop: 4,
-    borderWidth: 1,
-    borderColor: Ron1nColors.gold,
-    backgroundColor: '#1A1300',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}0D`,
     borderRadius: 18,
     padding: 16,
   },
@@ -1077,24 +1077,24 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   warningText: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 11,
     lineHeight: 18,
     marginTop: 8,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    backgroundColor: Ron1nGlass.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {
     maxHeight: '88%',
-    backgroundColor: '#0A0A0A',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: Ron1nColors.surfaceElevated,
+    borderTopLeftRadius: Ron1nRadii.modal,
+    borderTopRightRadius: Ron1nRadii.modal,
     padding: 24,
-    borderWidth: 1,
-    borderColor: Ron1nColors.purple,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.purple}66`,
   },
   modalTitle: {
     color: Ron1nColors.white,
@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
   },
   assetOption: {
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
+    borderBottomColor: Ron1nGlass.border,
     paddingVertical: 13,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   optionName: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 11,
     marginTop: 4,
   },
@@ -1133,9 +1133,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#00FF4144',
-    backgroundColor: '#00FF410D',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}44`,
+    backgroundColor: `${Ron1nColors.green}0D`,
   },
   reviewAddress: {
     color: Ron1nColors.purple,
@@ -1144,11 +1144,11 @@ const styles = StyleSheet.create({
   },
   policyBox: {
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: Ron1nColors.gold,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#1A1300',
+    backgroundColor: `${Ron1nColors.gold}0D`,
   },
   cancelButtonWrap: {
     marginTop: 10,
@@ -1175,11 +1175,11 @@ const styles = StyleSheet.create({
   },
   providerBox: {
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#222',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nGlass.border,
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#111',
+    backgroundColor: Ron1nColors.surface,
   },
   providerText: {
     color: Ron1nColors.gray,
@@ -1188,17 +1188,17 @@ const styles = StyleSheet.create({
   },
   checkBox: {
     marginTop: 22,
-    borderWidth: 1,
-    borderColor: '#444',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
     borderRadius: 14,
     padding: 14,
   },
   checkBoxActive: {
-    borderColor: Ron1nColors.green,
-    backgroundColor: '#00FF4115',
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}15`,
   },
   checkText: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmButtonText: {
-    color: '#000',
+    color: Ron1nColors.black,
     fontWeight: '900',
   },
   cancelButton: {

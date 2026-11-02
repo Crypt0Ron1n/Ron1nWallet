@@ -159,4 +159,125 @@ export class PriceService {
       return {};
     }
   }
+
+  /**
+   * Real daily OHLC candles (7 days) for the Syndicate market view's
+   * candlestick toggle. CoinGecko's free-tier OHLC endpoint is per-coin only
+   * (no batched equivalent), so this fires one request per unique
+   * CoinGecko id - fetched lazily, only when the user actually switches to
+   * candle view, never on every market refresh. Each request is isolated
+   * (`Promise.allSettled`): one asset's failure/rate-limit never blocks or
+   * fabricates data for the others - a symbol simply stays absent from the
+   * result, and callers must render that as "no chart data", never a
+   * synthesized candle.
+   */
+  static async getOhlc(
+    symbols: string[]
+  ): Promise<Record<string, Array<{ t: number; o: number; h: number; l: number; c: number }>>> {
+    const upperSymbols = symbols.map((symbol) => symbol.toUpperCase());
+    const idToSymbols = new Map<string, string[]>();
+
+    for (const symbol of upperSymbols) {
+      const id = COINGECKO_IDS[symbol];
+      if (!id) continue;
+      idToSymbols.set(id, [...(idToSymbols.get(id) ?? []), symbol]);
+    }
+
+    const ids = Array.from(idToSymbols.keys());
+    const result: Record<string, Array<{ t: number; o: number; h: number; l: number; c: number }>> = {};
+
+    await Promise.allSettled(
+      ids.map(async (id) => {
+        try {
+          const response = await fetch(
+            `https://api.coingecko.com/api/v3/coins/${id}/ohlc?vs_currency=usd&days=7`
+          );
+
+          if (!response.ok) return;
+
+          const data = await response.json();
+          if (!Array.isArray(data)) return;
+
+          const candles = data
+            .filter(
+              (row): row is [number, number, number, number, number] =>
+                Array.isArray(row) &&
+                row.length === 5 &&
+                row.every((value) => typeof value === 'number' && Number.isFinite(value))
+            )
+            .map(([t, o, h, l, c]) => ({ t, o, h, l, c }));
+
+          if (candles.length === 0) return;
+
+          for (const symbol of idToSymbols.get(id) ?? []) {
+            result[symbol] = candles;
+          }
+        } catch {
+          // This id's candles stay absent - never fabricated.
+        }
+      })
+    );
+
+    return result;
+  }
+
+  /**
+   * Real 5-minute price snapshots (24h window) for the Syndicate 5m/15m
+   * candle timeframes. CoinGecko's free tier has no selectable-interval
+   * OHLC endpoint, so 5m/15m candles are derived (via
+   * candlestickMath.pointsToCandles) from this real, point-sampled series
+   * rather than fabricated - confirmed 5-minute spacing, 288 points/24h.
+   * Per-coin only (no batched equivalent), fetched lazily and in isolation
+   * per asset (`Promise.allSettled`) so one failure never blocks the rest.
+   */
+  static async getFineGrainedPrices(
+    symbols: string[]
+  ): Promise<Record<string, Array<{ t: number; price: number }>>> {
+    const upperSymbols = symbols.map((symbol) => symbol.toUpperCase());
+    const idToSymbols = new Map<string, string[]>();
+
+    for (const symbol of upperSymbols) {
+      const id = COINGECKO_IDS[symbol];
+      if (!id) continue;
+      idToSymbols.set(id, [...(idToSymbols.get(id) ?? []), symbol]);
+    }
+
+    const ids = Array.from(idToSymbols.keys());
+    const result: Record<string, Array<{ t: number; price: number }>> = {};
+
+    await Promise.allSettled(
+      ids.map(async (id) => {
+        try {
+          const response = await fetch(
+            `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1`
+          );
+
+          if (!response.ok) return;
+
+          const data = await response.json();
+          const rawPrices = data?.prices;
+          if (!Array.isArray(rawPrices)) return;
+
+          const points = rawPrices
+            .filter(
+              (row): row is [number, number] =>
+                Array.isArray(row) &&
+                row.length === 2 &&
+                row.every((value) => typeof value === 'number' && Number.isFinite(value))
+            )
+            .map(([t, price]) => ({ t, price }));
+
+          if (points.length === 0) return;
+
+          for (const symbol of idToSymbols.get(id) ?? []) {
+            result[symbol] = points;
+          }
+        } catch {
+          // This id's fine-grained series stays absent - never fabricated.
+        }
+      })
+    );
+
+    return result;
+  }
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Ron1nColors, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nSpacing, Ron1nTypography } from '../theme/ron1nTheme';
 
 type Props = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -39,9 +39,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Ron1nGlass.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: Ron1nGlass.border,
     marginBottom: Ron1nSpacing.md,
   },
   title: {

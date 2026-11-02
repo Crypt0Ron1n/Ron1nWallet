@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Ron1nGradients } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGradients } from '../theme/ron1nTheme';
 
 /**
  * Shared screen backdrop. Uses the app's own existing gradient token
@@ -36,7 +36,7 @@ export default function Ron1nScreen({ children }: { children: React.ReactNode })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: Ron1nColors.black,
   },
   content: {
     padding: 20,

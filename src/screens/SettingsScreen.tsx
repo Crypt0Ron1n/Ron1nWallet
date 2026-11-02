@@ -576,8 +576,8 @@ export default function SettingsScreen() {
             <Switch
               value={privacyMode}
               onValueChange={togglePrivacy}
-              trackColor={{ false: '#333333', true: '#00FF4166' }}
-              thumbColor={privacyMode ? Ron1nColors.green : '#888888'}
+              trackColor={{ false: Ron1nColors.border, true: `${Ron1nColors.green}66` }}
+              thumbColor={privacyMode ? Ron1nColors.green : Ron1nColors.muted}
             />
           </View>
         </Ron1nCard>
@@ -597,8 +597,8 @@ export default function SettingsScreen() {
             <Switch
               value={screenProtection}
               onValueChange={toggleScreenProtection}
-              trackColor={{ false: '#333333', true: '#00FF4166' }}
-              thumbColor={screenProtection ? Ron1nColors.green : '#888888'}
+              trackColor={{ false: Ron1nColors.border, true: `${Ron1nColors.green}66` }}
+              thumbColor={screenProtection ? Ron1nColors.green : Ron1nColors.muted}
             />
           </View>
         </Ron1nCard>
@@ -726,12 +726,12 @@ const styles = StyleSheet.create({
     marginTop: Ron1nSpacing.xs,
   },
   body: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 19,
   },
   bodySpacer: {
-    color: '#CCCCCC',
+    color: Ron1nColors.gray,
     fontSize: 12,
     lineHeight: 19,
     marginTop: 12,
@@ -739,9 +739,9 @@ const styles = StyleSheet.create({
   statusPill: {
     alignSelf: 'flex-start',
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#00FF4166',
-    backgroundColor: '#00FF4112',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}66`,
+    backgroundColor: `${Ron1nColors.green}12`,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 14,
@@ -756,9 +756,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 16,
     paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#FFD70066',
-    backgroundColor: '#FFD70012',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}12`,
     alignItems: 'center',
   },
   actionText: {
@@ -771,9 +771,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 18,
     paddingVertical: 16,
-    backgroundColor: '#00FF4122',
-    borderWidth: 1,
-    borderColor: '#00FF4188',
+    backgroundColor: `${Ron1nColors.green}22`,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}88`,
     alignItems: 'center',
   },
   primaryText: {
@@ -786,12 +786,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 18,
     paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: '#444444',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Ron1nColors.border,
     alignItems: 'center',
   },
   secondaryText: {
-    color: '#BBBBBB',
+    color: Ron1nColors.gray,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 2,
@@ -800,9 +800,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 14,
     paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#00FF4144',
-    backgroundColor: '#00FF410D',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.green}44`,
+    backgroundColor: `${Ron1nColors.green}0D`,
     alignItems: 'center',
   },
   utilityText: {
@@ -815,9 +815,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 14,
     paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: '#FFD70066',
-    backgroundColor: '#FFD70012',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}66`,
+    backgroundColor: `${Ron1nColors.gold}12`,
     alignItems: 'center',
   },
   warningText: {
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   dangerTitle: {
-    color: '#FF7777',
+    color: Ron1nColors.danger,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 2,
@@ -837,13 +837,13 @@ const styles = StyleSheet.create({
     marginTop: 14,
     borderRadius: 16,
     paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#FF4D4D88',
-    backgroundColor: '#FF4D4D18',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.danger}88`,
+    backgroundColor: `${Ron1nColors.danger}18`,
     alignItems: 'center',
   },
   dangerText: {
-    color: '#FF7777',
+    color: Ron1nColors.danger,
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 2,
@@ -858,14 +858,14 @@ const styles = StyleSheet.create({
   wordBox: {
     width: '47%',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FFD70044',
-    backgroundColor: '#000000',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${Ron1nColors.gold}44`,
+    backgroundColor: Ron1nColors.black,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   wordNumber: {
-    color: '#777777',
+    color: Ron1nColors.muted,
     fontSize: 9,
     fontWeight: '900',
     marginBottom: 4,
@@ -881,11 +881,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#222222',
+    borderBottomColor: Ron1nGlass.border,
     paddingVertical: 10,
   },
   dataLabel: {
-    color: '#AAAAAA',
+    color: Ron1nColors.gray,
     fontSize: 12,
     flex: 1,
   },
@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Ron1nGlass.border,
     backgroundColor: Ron1nGlass.surface,
     paddingVertical: 12,
@@ -920,12 +920,12 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: '#555560',
+    borderColor: Ron1nColors.disabled,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioOuterSelected: {
-    borderColor: Ron1nColors.neonPurple,
+    borderColor: `${Ron1nColors.neonPurple}99`,
   },
   radioInner: {
     width: 9,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     backgroundColor: Ron1nColors.neonPurple,
   },
   startupOptionText: {
-    color: '#BBBBBB',
+    color: Ron1nColors.gray,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
