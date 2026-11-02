@@ -2,6 +2,20 @@ import { PriceService } from '../PriceService';
 import { RON1N_ASSETS, resolveNetworkIdentifier } from '../../config/assetCatalog';
 import { pointsToCandles, type Candle } from '../../utils/candlestickMath';
 
+type FineGrainedPoints = Record<string, Array<{ t: number; price: number }>>;
+
+/**
+ * 5m/15m/24h all resample the SAME real 1-day point series - only the
+ * bucket width differs. Without this cache, switching between those three
+ * timeframes re-fetched that series from scratch every tap (12-16 parallel
+ * per-coin requests each time), which was enough to exhaust the CoinGecko
+ * free-tier rate limit within a few taps and leave every timeframe showing
+ * no data. A short TTL is safe since the source data is itself only
+ * 5-minute-resolution.
+ */
+let cachedPointSeries: { data: FineGrainedPoints; fetchedAt: number } | null = null;
+const POINT_SERIES_TTL_MS = 60 * 1000;
+
 export type SyndicateCandleTimeframe = '5m' | '15m' | '4h' | '24h';
 
 const TIMEFRAME_BUCKET_MS: Record<'5m' | '15m' | '24h', number> = {
@@ -117,7 +131,12 @@ export class SyndicateMarketService {
     }
 
     const bucketMs = TIMEFRAME_BUCKET_MS[timeframe];
-    const pointSeries = await PriceService.getFineGrainedPrices(symbols);
+
+    const now = Date.now();
+    if (!cachedPointSeries || now - cachedPointSeries.fetchedAt > POINT_SERIES_TTL_MS) {
+      cachedPointSeries = { data: await PriceService.getFineGrainedPrices(symbols), fetchedAt: now };
+    }
+    const pointSeries = cachedPointSeries.data;
 
     const candles: Record<string, Candle[]> = {};
     for (const [symbol, points] of Object.entries(pointSeries)) {
