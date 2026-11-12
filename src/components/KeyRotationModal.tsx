@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   card: {
     maxHeight: '85%',
-    backgroundColor: Ron1nColors.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireModal,
     borderTopLeftRadius: Ron1nRadii.modal,
     borderTopRightRadius: Ron1nRadii.modal,
     padding: 24,

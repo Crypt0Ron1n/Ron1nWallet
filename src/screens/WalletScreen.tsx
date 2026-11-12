@@ -46,7 +46,7 @@ import { VaultService } from '../services/VaultService';
 import { WalletService } from '../services/WalletService';
 import { ReceiveIdentityService } from '../services/identity/ReceiveIdentityService';
 import type { SupportedChain } from '../services/crypto/types';
-import { Ron1nColors, Ron1nGlass } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nGlass, Ron1nGradients, Ron1nRadii } from '../theme/ron1nTheme';
 
 type WalletAsset = {
   symbol: string;
@@ -578,7 +578,7 @@ export default function WalletScreen() {
           />
 
           <LinearGradient
-            colors={[`${Ron1nColors.purple}30`, `${Ron1nColors.purple}08`, 'transparent']}
+            colors={Ron1nGradients.sapphireHero}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.heroCard}
@@ -847,16 +847,16 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Ron1nGlass.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireSurfaceLight,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
   },
   heroCard: {
-    borderRadius: 27,
+    borderRadius: Ron1nRadii.hero,
     padding: 22,
     marginBottom: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${Ron1nColors.purple}55`,
+    borderColor: Ron1nGlass.borderSky,
     shadowColor: Ron1nColors.purple,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -922,9 +922,9 @@ const styles = StyleSheet.create({
     padding: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
   },
   actionPrimary: {
     backgroundColor: `${Ron1nColors.purple}18`,
@@ -958,9 +958,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
   },
   modeText: {
     flexDirection: 'row',
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
   },
   sectionHeader: {
     flexDirection: 'row',

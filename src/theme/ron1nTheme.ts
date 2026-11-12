@@ -11,6 +11,15 @@ export const Ron1nColors = {
   inputBg: '#22232D',
   pressed: '#292936',
 
+  // Sapphire palette (style-reference restyle) - a deep-blue variant of the
+  // existing black/surface scale above, used wherever the reference calls
+  // for a "sapphire" base/card/sheet instead of the neutral-black one.
+  abyss: '#030816',
+  obsidian: '#061028',
+  sapphireSurface: '#0B1A3D',
+  sapphireSurfaceLight: '#0F2352',
+  sapphireModal: '#091636',
+
   // Ron1n primary purple hierarchy
   deepPurple: '#240046',
   purple: '#8C00FF',
@@ -50,6 +59,12 @@ export const Ron1nGradients = {
   /** Primary CTA fill only - defined once and reused so no screen/button
    * instance ever constructs a gradient array inline in render. */
   primaryButton: ['#B026FF', '#8C00FF', '#240046'] as const,
+  /** Sapphire restyle: page background (replaces the purple-tinted `app`
+   * gradient on screens using the new sapphire base). */
+  sapphireApp: ['#030816', '#061028', '#030816'] as const,
+  /** Sapphire restyle: static hero-card fill - no animated gradient border,
+   * per the brief's "static gradient fill" rule. */
+  sapphireHero: ['#0F2352', '#061028'] as const,
 };
 
 /**
@@ -78,8 +93,14 @@ export const Ron1nGlass = {
    * opacity to stay legible against whatever scrolls underneath it. */
   overlay: '#0A0A0DE6',
   /** Backdrop behind a modal/bottom-sheet, distinct from `overlay` above
-   * (which is for chrome floating over scrolling content, not a backdrop). */
-  modalOverlay: 'rgba(0,0,0,0.68)',
+   * (which is for chrome floating over scrolling content, not a backdrop).
+   * Sapphire restyle: abyss-tinted at 80%, replacing the earlier neutral
+   * black value. */
+  modalOverlay: 'rgba(3,8,22,0.8)',
+  /** Sapphire restyle: hairline/active-border tints for the new sapphire
+   * surfaces, parallel to `border`/`borderStrong` above. */
+  borderSky: 'rgba(56,189,248,0.18)',
+  borderSkyStrong: 'rgba(56,189,248,0.25)',
 } as const;
 
 /**
@@ -158,7 +179,10 @@ export const Ron1nRadii = {
   input: 12,
   card: 18,
   cardLarge: 22,
-  modal: 26,
+  /** Sapphire restyle: sheet top corners, brief range 28-32. */
+  modal: 30,
+  /** Sapphire restyle: hero card, brief range 24-26. */
+  hero: 25,
 } as const;
 
 export const Ron1nButtonHeight = 52;

@@ -39,9 +39,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     marginBottom: Ron1nSpacing.md,
   },
   title: {

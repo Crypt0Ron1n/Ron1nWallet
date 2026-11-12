@@ -295,8 +295,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Ron1nGlass.border,
-    backgroundColor: Ron1nGlass.surface,
+    borderColor: Ron1nGlass.borderSky,
+    backgroundColor: Ron1nColors.sapphireSurface,
   },
   assetChipSelected: {
     borderColor: `${Ron1nColors.purple}99`,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Ron1nGlass.borderStrong,
+    borderColor: Ron1nGlass.borderSkyStrong,
     alignItems: 'center',
   },
   actionButtonSeparate: {

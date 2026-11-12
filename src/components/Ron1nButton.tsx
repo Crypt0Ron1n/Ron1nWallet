@@ -7,6 +7,7 @@ import Ron1nPressable from './Ron1nPressable';
 import {
   Ron1nButtonHeight,
   Ron1nColors,
+  Ron1nGlass,
   Ron1nGradients,
   Ron1nRadii,
   Ron1nSpacing,
@@ -38,8 +39,8 @@ const VARIANT_STYLE: Record<
     text: Ron1nColors.white,
   },
   secondary: {
-    background: Ron1nColors.inputBg,
-    border: Ron1nColors.border,
+    background: Ron1nColors.sapphireSurfaceLight,
+    border: Ron1nGlass.borderSky,
     text: Ron1nColors.white,
   },
   outline: {

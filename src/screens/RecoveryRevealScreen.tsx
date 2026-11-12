@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   wordBox: {
     width: '30%',
     backgroundColor: Ron1nColors.surface,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     borderWidth: 1,
     borderRadius: 8,
     padding: 8,

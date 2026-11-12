@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     backgroundColor: Ron1nColors.surface,
   },
   activeTabButton: {

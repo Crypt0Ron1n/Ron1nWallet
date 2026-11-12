@@ -684,9 +684,9 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: '48%',
-    backgroundColor: Ron1nGlass.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireSurfaceLight,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     borderRadius: 18,
     padding: 14,
   },
@@ -941,9 +941,9 @@ const styles = StyleSheet.create({
   },
   activityRow: {
     marginTop: 12,
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     borderRadius: 16,
     padding: 14,
   },

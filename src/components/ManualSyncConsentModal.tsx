@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: Ron1nColors.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireModal,
     borderRadius: Ron1nRadii.modal,
     padding: 24,
     borderWidth: StyleSheet.hairlineWidth,

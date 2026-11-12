@@ -3,7 +3,7 @@ import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Ron1nPressable from './Ron1nPressable';
-import { Ron1nColors, Ron1nGlass, Ron1nMonospace, Ron1nRadii } from '../theme/ron1nTheme';
+import { Ron1nColors, Ron1nMonospace, Ron1nRadii } from '../theme/ron1nTheme';
 import { getAssetVisual } from '../config/assetVisuals';
 
 type Props = {
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
     borderWidth: StyleSheet.hairlineWidth,
-    backgroundColor: Ron1nGlass.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireSurfaceLight,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',

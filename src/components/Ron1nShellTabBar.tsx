@@ -72,7 +72,7 @@ export default function Ron1nShellTabBar({ active, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: Ron1nColors.black,
+    backgroundColor: Ron1nColors.abyss,
   },
   bar: {
     flexDirection: 'row',
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Ron1nGlass.borderStrong,
-    backgroundColor: Ron1nGlass.surfaceElevated,
+    borderColor: Ron1nGlass.borderSkyStrong,
+    backgroundColor: Ron1nColors.sapphireSurfaceLight,
     overflow: 'hidden',
   },
   item: {

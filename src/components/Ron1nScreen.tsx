@@ -5,16 +5,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ron1nColors, Ron1nGradients } from '../theme/ron1nTheme';
 
 /**
- * Shared screen backdrop. Uses the app's own existing gradient token
- * (previously defined but unused) for a deep-obsidian-to-void depth instead
- * of a flat black fill - a static gradient, not a blur, so it costs nothing
- * on scroll and renders identically on every platform.
+ * Shared screen backdrop. Uses the app's own sapphire gradient token for a
+ * deep-abyss-to-obsidian depth instead of a flat black fill - a static
+ * gradient, not a blur, so it costs nothing on scroll and renders
+ * identically on every platform.
  */
 export default function Ron1nScreen({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={Ron1nGradients.app}
+        colors={Ron1nGradients.sapphireApp}
         start={{ x: 0.1, y: 0 }}
         end={{ x: 0.9, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -36,7 +36,7 @@ export default function Ron1nScreen({ children }: { children: React.ReactNode })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Ron1nColors.black,
+    backgroundColor: Ron1nColors.abyss,
   },
   content: {
     padding: 20,

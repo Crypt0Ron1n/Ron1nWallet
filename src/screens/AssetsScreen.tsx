@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Ron1nSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Ron1nGlass.border,
+    borderBottomColor: Ron1nGlass.borderSky,
   },
   rowMain: {
     flex: 1,

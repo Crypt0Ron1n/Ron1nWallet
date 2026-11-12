@@ -61,12 +61,12 @@ const styles = StyleSheet.create({
   },
   glass: {
     borderRadius: Ron1nRadii.card,
-    backgroundColor: Ron1nGlass.surface,
-    borderColor: Ron1nGlass.border,
+    backgroundColor: Ron1nColors.sapphireSurface,
+    borderColor: Ron1nGlass.borderSky,
   },
   elevated: {
     borderRadius: Ron1nRadii.cardLarge,
-    backgroundColor: Ron1nGlass.surfaceElevated,
-    borderColor: Ron1nGlass.borderStrong,
+    backgroundColor: Ron1nColors.sapphireSurfaceLight,
+    borderColor: Ron1nGlass.borderSkyStrong,
   },
 });

@@ -476,9 +476,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 18,
     padding: Ron1nSpacing.md,
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     gap: Ron1nSpacing.sm,
   },
   statusLabel: {
@@ -498,9 +498,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Ron1nSpacing.xs,
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
   },
   actionTitle: {
     fontSize: 8,
@@ -526,9 +526,9 @@ const styles = StyleSheet.create({
   chartModeToggle: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     borderWidth: 1,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     borderRadius: 999,
     padding: 3,
     marginBottom: Ron1nSpacing.sm,
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 11,
     borderRadius: 999,
-    backgroundColor: Ron1nGlass.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
   },
   timeframeOptionActive: {
     backgroundColor: `${Ron1nColors.cyan}18`,
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
   assetRow: {
     paddingVertical: Ron1nSpacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Ron1nGlass.border,
+    borderBottomColor: Ron1nGlass.borderSky,
     gap: Ron1nSpacing.xs,
   },
   assetRowTop: {
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Ron1nSpacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Ron1nGlass.border,
+    borderBottomColor: Ron1nGlass.borderSky,
   },
   rowLabel: {
     ...Ron1nTypography.body,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     gap: Ron1nSpacing.sm + 2,
     paddingVertical: Ron1nSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Ron1nGlass.border,
+    borderBottomColor: Ron1nGlass.borderSky,
   },
   activityText: { flex: 1 },
   footerButton: {

@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
   },
   assetOption: {
     borderBottomWidth: 1,
-    borderBottomColor: Ron1nGlass.border,
+    borderBottomColor: Ron1nGlass.borderSky,
     paddingVertical: 13,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1176,7 +1176,7 @@ const styles = StyleSheet.create({
   providerBox: {
     marginTop: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Ron1nGlass.border,
+    borderColor: Ron1nGlass.borderSky,
     borderRadius: 14,
     padding: 12,
     backgroundColor: Ron1nColors.surface,

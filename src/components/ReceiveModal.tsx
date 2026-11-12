@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     maxHeight: '88%',
-    backgroundColor: Ron1nColors.surfaceElevated,
+    backgroundColor: Ron1nColors.sapphireModal,
     borderTopLeftRadius: Ron1nRadii.modal,
     borderTopRightRadius: Ron1nRadii.modal,
     paddingHorizontal: Ron1nSpacing.xl,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   addressContainer: {
     width: '100%',
-    backgroundColor: Ron1nColors.surface,
+    backgroundColor: Ron1nColors.sapphireSurface,
     padding: Ron1nSpacing.lg,
     borderRadius: Ron1nRadii.sm,
     marginTop: Ron1nSpacing.md,
