@@ -98,7 +98,11 @@ export default function SyndicateScreen() {
   const [marketLoading, setMarketLoading] = useState(true);
   const [marketRefreshedAt, setMarketRefreshedAt] = useState<string | null>(null);
   const [chartMode, setChartMode] = useState<'LINE' | 'CANDLES'>('LINE');
-  const [timeframe, setTimeframe] = useState<SyndicateCandleTimeframe>('4h');
+  // Other timeframes (5m/15m/24h) are temporarily removed from the UI while
+  // a mixup between 4h and 24h is investigated - 4h is the only one wired
+  // up right now. SyndicateCandleTimeframe/SyndicateMarketService still
+  // support all four so this is a one-line revert once that's sorted.
+  const timeframe: SyndicateCandleTimeframe = '4h';
   const [candlesByTimeframe, setCandlesByTimeframe] = useState<
     Partial<Record<SyndicateCandleTimeframe, Record<string, Candle[]>>>
   >({});
@@ -177,10 +181,6 @@ export default function SyndicateScreen() {
 
   const handleSelectChartMode = useCallback((mode: 'LINE' | 'CANDLES') => {
     setChartMode(mode);
-  }, []);
-
-  const handleSelectTimeframe = useCallback((tf: SyndicateCandleTimeframe) => {
-    setTimeframe(tf);
   }, []);
 
   // Both LINE and CANDLES render the same per-timeframe candle series (as a
@@ -271,6 +271,18 @@ export default function SyndicateScreen() {
             color={Ron1nColors.cyan}
             onPress={openAssetProtection}
           />
+          <QuickAction
+            icon="swap-horizontal-outline"
+            label="SWAP"
+            color={Ron1nColors.purple}
+            disabled
+          />
+          <QuickAction
+            icon="card-outline"
+            label="CARD"
+            color={Ron1nColors.gold}
+            disabled
+          />
         </View>
 
         <View style={styles.sectionHeaderRow}>
@@ -305,25 +317,6 @@ export default function SyndicateScreen() {
           ))}
         </View>
 
-        <View style={styles.timeframeRow}>
-          {(['5m', '15m', '4h', '24h'] as const).map((tf) => (
-            <TouchableOpacity
-              key={tf}
-              style={[styles.timeframeOption, timeframe === tf && styles.timeframeOptionActive]}
-              onPress={() => handleSelectTimeframe(tf)}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-              accessibilityState={{ selected: timeframe === tf }}
-              accessibilityLabel={`${tf} chart`}
-            >
-              <Text
-                style={[styles.timeframeOptionText, timeframe === tf && styles.timeframeOptionTextActive]}
-              >
-                {tf.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         <Ron1nCard glow="cyan">
           {marketLoading ? (
@@ -440,22 +433,31 @@ function QuickAction({
   label,
   color,
   onPress,
+  disabled,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   color: string;
-  onPress: () => void;
+  onPress?: () => void;
+  /** No feature exists behind this slot yet - renders muted and non-
+   * interactive with a "SOON" caption rather than a dead/fake tap target. */
+  disabled?: boolean;
 }) {
+  const tone = disabled ? Ron1nColors.muted : color;
+
   return (
     <TouchableOpacity
-      style={styles.actionCard}
-      onPress={onPress}
+      style={[styles.actionCard, disabled && styles.actionCardDisabled]}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={disabled ? `${label}, coming soon` : label}
+      accessibilityState={{ disabled: Boolean(disabled) }}
     >
-      <Ionicons name={icon} size={20} color={color} />
-      <Text style={[styles.actionTitle, { color }]}>{label}</Text>
+      <Ionicons name={icon} size={20} color={tone} />
+      <Text style={[styles.actionTitle, { color: tone }]}>{label}</Text>
+      {disabled ? <Text style={styles.actionSoon}>SOON</Text> : null}
     </TouchableOpacity>
   );
 }
@@ -487,11 +489,13 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Ron1nSpacing.sm,
     marginBottom: Ron1nSpacing.xl,
   },
   actionCard: {
-    flex: 1,
+    flexBasis: '31%',
+    flexGrow: 1,
     minHeight: 76,
     borderRadius: 18,
     padding: Ron1nSpacing.sm,
@@ -502,11 +506,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Ron1nGlass.borderSky,
   },
+  actionCardDisabled: {
+    opacity: 0.55,
+  },
   actionTitle: {
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 0.6,
     textAlign: 'center',
+  },
+  actionSoon: {
+    fontSize: 6,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: Ron1nColors.disabled,
+    marginTop: -2,
   },
   sectionTitle: {
     ...Ron1nTypography.sectionTitle,

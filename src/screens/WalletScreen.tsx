@@ -658,6 +658,22 @@ export default function WalletScreen() {
               </Text>
               <Text style={styles.actionCaption}>Checks & protection</Text>
             </TouchableOpacity>
+
+            <View style={[styles.actionCard, styles.actionCardDisabled]}>
+              <View style={[styles.actionIconBadge, { backgroundColor: `${Ron1nColors.muted}18` }]}>
+                <Ionicons name="swap-horizontal-outline" size={22} color={Ron1nColors.muted} />
+              </View>
+              <Text style={[styles.actionTitle, { color: Ron1nColors.muted }]}>SWAP</Text>
+              <Text style={styles.actionCaption}>Coming soon</Text>
+            </View>
+
+            <View style={[styles.actionCard, styles.actionCardDisabled]}>
+              <View style={[styles.actionIconBadge, { backgroundColor: `${Ron1nColors.muted}18` }]}>
+                <Ionicons name="card-outline" size={22} color={Ron1nColors.muted} />
+              </View>
+              <Text style={[styles.actionTitle, { color: Ron1nColors.muted }]}>CARD</Text>
+              <Text style={styles.actionCaption}>Coming soon</Text>
+            </View>
           </View>
 
           <View style={styles.modeRow}>
@@ -912,11 +928,13 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginBottom: 12,
   },
   actionCard: {
-    flex: 1,
+    flexBasis: '31%',
+    flexGrow: 1,
     minHeight: 102,
     borderRadius: 20,
     padding: 13,
@@ -929,6 +947,9 @@ const styles = StyleSheet.create({
   actionPrimary: {
     backgroundColor: `${Ron1nColors.purple}18`,
     borderColor: `${Ron1nColors.purple}55`,
+  },
+  actionCardDisabled: {
+    opacity: 0.55,
   },
   actionIconBadge: {
     width: 40,

@@ -1,3 +1,21 @@
+const FETCH_TIMEOUT_MS = 12000;
+
+/**
+ * Plain `fetch` has no timeout - a stalled connection (flaky mobile data,
+ * a dropped packet with no reset) leaves the caller's promise pending
+ * forever, which left the Syndicate timeframe UI stuck on "LOADING..."
+ * indefinitely instead of failing into "no data". This bounds every
+ * CoinGecko call to the same timeout so a hang degrades like any other
+ * failure - never fabricates data, just gives up and lets the caller's
+ * existing `catch`/`!response.ok` handling take over.
+ */
+function fetchWithTimeout(url: string, timeoutMs: number = FETCH_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin',
   LTC: 'litecoin',
@@ -41,7 +59,7 @@ export class PriceService {
     }
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`
       );
 
@@ -103,7 +121,7 @@ export class PriceService {
     }
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&sparkline=true&price_change_percentage=24h`
       );
 
@@ -189,7 +207,7 @@ export class PriceService {
     await Promise.allSettled(
       ids.map(async (id) => {
         try {
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `https://api.coingecko.com/api/v3/coins/${id}/ohlc?vs_currency=usd&days=7`
           );
 
@@ -248,7 +266,7 @@ export class PriceService {
     await Promise.allSettled(
       ids.map(async (id) => {
         try {
-          const response = await fetch(
+          const response = await fetchWithTimeout(
             `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1`
           );
 
